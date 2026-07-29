@@ -1,0 +1,72 @@
+第三方组件与素材声明
+====================
+
+本文件说明本项目中不适用仓库根 LICENSE（MIT）的部分。
+
+
+1. Spine 运行时
+---------------
+
+本项目使用 Esoteric Software 的 Spine 运行时：
+
+    @esotericsoftware/spine-pixi-v8
+    @esotericsoftware/spine-core
+
+这些库采用 Spine Runtimes License，不是 MIT。核心条款是：
+**每个使用本产品的用户都必须持有自己的 Spine Editor 授权**，且以任何形式再分发本产品时
+必须包含该许可证与版权声明。
+
+许可证全文：https://esotericsoftware.com/spine-runtimes-license
+Spine Editor 授权：http://esotericsoftware.com/spine-editor-license
+
+    Spine Runtimes License Agreement
+    Last updated April 5, 2025. Replaces all prior versions.
+
+    Copyright (c) 2013-2025, Esoteric Software LLC
+
+    Integration of the Spine Runtimes into software or otherwise creating
+    derivative works of the Spine Runtimes is permitted under the terms and
+    conditions of Section 2 of the Spine Editor License Agreement:
+    http://esotericsoftware.com/spine-editor-license
+
+    Otherwise, it is permitted to integrate the Spine Runtimes into software
+    or otherwise create derivative works of the Spine Runtimes (collectively,
+    "Products"), provided that each user of the Products must obtain their own
+    Spine Editor license and redistribution of the Products in any form must
+    include this license and copyright notice.
+
+    THE SPINE RUNTIMES ARE PROVIDED BY ESOTERIC SOFTWARE LLC "AS IS" AND ANY
+    EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+    WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+    DISCLAIMED. IN NO EVENT SHALL ESOTERIC SOFTWARE LLC BE LIABLE FOR ANY
+    DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
+    (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES,
+    BUSINESS INTERRUPTION, OR LOSS OF USE, DATA, OR PROFITS) HOWEVER CAUSED AND
+    ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+    (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
+    THE SPINE RUNTIMES, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+
+2. 角色素材
+-----------
+
+    img/spine/roxy/roxy.atlas
+    img/spine/roxy/roxy.json
+    img/spine/roxy/roxy.png
+
+以上素材来自游戏《棕色尘埃2》(BROWN DUST 2)，角色为洛琪希（《无职转生》联动）。
+版权归 Neowiz / Round8 Studio 及相关权利方所有。
+
+这些素材仅供个人学习与非商业用途，**不适用本仓库的 MIT 许可证**。
+请勿用于商业目的，亦不建议再分发。
+
+本项目为个人学习性质，不隶属于也未获得 Neowiz、Round8 Studio、Esoteric Software 或
+《无职转生》版权方的授权或背书。若相关权利方认为本仓库的素材使用不当，请提 issue，
+将立即移除。
+
+
+3. 其它依赖
+-----------
+
+Electron、PixiJS、Vite、TypeScript 等依赖均采用 MIT 许可证，
+具体见各自 node_modules 目录下的 LICENSE 文件。

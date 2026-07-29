@@ -1,0 +1,27 @@
+{
+  "name": "desktop-girlfriend",
+  "version": "0.1.0",
+  "description": "桌面宠物 - 洛琪希",
+  "main": "./out/main/index.js",
+  "author": "you",
+  "license": "MIT",
+  "scripts": {
+    "dev": "node -e \"require('child_process').spawnSync('cmd',['/c','set ELECTRON_RUN_AS_NODE=&& electron-vite dev'],{stdio:'inherit',shell:true})\"",
+    "build": "electron-vite build",
+    "start": "node -e \"require('child_process').spawnSync('cmd',['/c','set ELECTRON_RUN_AS_NODE=&& electron-vite preview'],{stdio:'inherit',shell:true})\"",
+    "run": "node -e \"require('child_process').spawnSync('cmd',['/c','set ELECTRON_RUN_AS_NODE=&& electron .'],{stdio:'inherit',shell:true})\"",
+    "typecheck": "tsc --noEmit -p tsconfig.node.json && tsc --noEmit -p tsconfig.json"
+  },
+  "dependencies": {
+    "@esotericsoftware/spine-pixi-v8": "^4.2.119",
+    "electron-store": "^10.0.0",
+    "pixi.js": "^8.19.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.9.0",
+    "electron": "^33.2.0",
+    "electron-vite": "^2.3.0",
+    "typescript": "^5.6.3",
+    "vite": "^5.4.11"
+  }
+}

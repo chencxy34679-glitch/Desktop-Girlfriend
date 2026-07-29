@@ -1,0 +1,21 @@
+# 依赖与构建产物
+node_modules/
+out/
+dist/
+dist-electron/
+
+# 原始素材备份（与 img/spine/roxy/ 内容重复，不进仓库）
+Live2D/
+
+# 日志与临时文件
+*.log
+npm-debug.log*
+.vite/
+*.tsbuildinfo
+
+# 编辑器与系统
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+desktop.ini
