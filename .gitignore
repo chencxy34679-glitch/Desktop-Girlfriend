@@ -13,6 +13,9 @@ npm-debug.log*
 .vite/
 *.tsbuildinfo
 
+# 打包产物
+release/
+
 # 编辑器与系统
 .vscode/
 .idea/

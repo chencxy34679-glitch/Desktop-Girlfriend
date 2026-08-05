@@ -1,162 +1,285 @@
 /**
  * Renderer 入口
  *
- * 流程：
- *  1. 启动 PixiJS 应用，背景透明，铺满 #pet-stage
- *  2. 通过 window.petApi 加载角色 config（含 Spine 三件套的相对路径）
- *  3. 加载 Spine 骨骼动画，构建 SpineCharacter 放到 stage 上
- *  4. 启动左键长按拖动 + 右键菜单 + 点击触发互动动画
- *  5. 通知主进程：按模型包围盒缩放窗口 + 对齐到任务栏上方
- *
- * 注意：眨眼、头发飘动这些以前靠粒子和蒙版模拟的效果，
- * 现在都由 Spine 的 idle 动画原生提供，不再需要外挂实现。
+ * 装配顺序：
+ *  1. 启动 PixiJS 应用（透明背景，覆盖 #pet-stage）
+ *  2. 创建 EventBus
+ *  3. 创建 CharacterManager / ChatAdapter / TtsAdapter / SpeechBubble
+ *  4. 启动拖拽（带 onDragStateChanged 钩子，回调中标记 isDragging，
+ *     用于屏蔽 scale 快捷键）
+ *  5. 注册右键菜单（菜单项注册表）
+ *  6. 加载初始角色；订阅主进程推流的 'character:active-changed'，实现热切换
+ *  7. 主循环 ticker 推进动画
  */
 
 import { Application, Container } from 'pixi.js';
-// PixiJS v8 在严格 CSP 下需要显式导入 unsafe-eval 旁路模块，
-// 否则启动会抛 "Current environment does not allow unsafe-eval"
-// 必须在最顶部、且在 Application 导入前 import（模块注册副作用）。
+// PixiJS v8 在严格 CSP 下需要显式导入 unsafe-eval 旁路模块
 import 'pixi.js/unsafe-eval';
-import { SpineCharacter } from './spine-character';
-import { setupDrag } from './drag';
-import { setupContextMenu, registerMenuItem } from './menu';
 
-/** 缩放上下限（右键菜单控制） */
+import { EventBus } from './core/event-bus';
+import { CharacterManager } from './core/character-manager';
+import { ChatAdapter } from './core/chat-adapter';
+import { TtsAdapter } from './core/tts-adapter';
+import { SpeechBubble } from './core/speech-bubble';
+import { setupDrag, type DragController } from './drag';
+import {
+  setupContextMenu,
+  registerMenuItem,
+  setMenuScale,
+  setMenuTheme,
+  type MenuItem,
+} from './menu';
+
+const STAGE_ID = 'pet-stage';
+
+/** 缩放上下限（右键菜单 / 键盘控制） */
 const SCALE_MIN = 0.2;
 const SCALE_MAX = 1.5;
 const SCALE_STEP = 0.1;
 const SCALE_DEFAULT = 0.5;
 
-/** 随机播放互动动画的间隔范围（毫秒） */
+/** 随机播放互动动画的间隔范围 */
 const IDLE_MOTION_MIN_MS = 30_000;
 const IDLE_MOTION_RANGE_MS = 60_000;
 
-const STAGE_ID = 'pet-stage';
-const CHARACTER_ID = 'roxy';
-
 async function boot(): Promise<void> {
-  const cfg = await window.petApi.loadCharacter(CHARACTER_ID);
-  if (!cfg?.spine) {
-    console.error('[renderer] failed to load character config or missing spine section');
+  // ---- 1) 取首个角色 config ----
+  // 第一帧必须知道"激活角色是谁"。
+  // 优先从 petApi.getActiveCharacter() 拿（多角色切换场景下与主进程保持一致）。
+  const initialId = await window.petApi.getActiveCharacter();
+  const initialCharacterId = initialId ?? 'roxy';
+
+  const cfg = await window.petApi.loadCharacter(initialCharacterId);
+  if (!cfg) {
+    console.error('[renderer] failed to load character config', { initialCharacterId });
     return;
   }
-  // 把相对路径解析成绝对 URL，让 PIXI 能 fetch。
-  // dev: http://localhost:port/spine/roxy/roxy.atlas
-  // prod: file:///E:/.../out/renderer/spine/roxy/roxy.atlas
-  // 中文等非 ASCII 文件名的 URL 编码走 URL 构造器，避免手拆 split 出错。
+
+  // ---- 2) URL 解析 ----
   const toAbsolute = (p: string): string =>
     new URL(p.split('/').map(encodeURIComponent).join('/'), document.baseURI).toString();
-  const atlasUrl = toAbsolute(cfg.spine.atlasUrl);
-  const jsonUrl = toAbsolute(cfg.spine.jsonUrl);
 
-  // 创建 PixiJS v8 Application
+  // ---- 3) PixiJS ----
   const app = new Application();
   await app.init({
-    backgroundAlpha: 0, // 透明背景
+    backgroundAlpha: 0,
     antialias: true,
     resolution: window.devicePixelRatio || 1,
     autoDensity: true,
     resizeTo: document.getElementById(STAGE_ID) as HTMLElement,
-    preference: 'webgl', // 强制 WebGL 走 WebGL2，避开 WebGPU 在透明窗口的渲染问题
+    preference: 'webgl',
   });
-  const dom = app.canvas as HTMLCanvasElement;
-  dom.style.display = 'block';
-  document.getElementById(STAGE_ID)?.appendChild(dom);
+  const canvas = app.canvas as HTMLCanvasElement;
+  canvas.style.display = 'block';
+  document.getElementById(STAGE_ID)?.appendChild(canvas);
+  console.log('[renderer] PIXI app init OK');
 
-  // 调试日志：dev tools 会显示
-  console.log('[renderer] PIXI app init OK', {
-    domSize: { w: dom.width, h: dom.height },
-    stageSize: { w: app.renderer.width, h: app.renderer.height },
-  });
-
-  // 角色容器
   const root = new Container();
   app.stage.addChild(root);
 
-  // 实例化角色
-  let character: SpineCharacter;
-  try {
-    character = await SpineCharacter.create({
-      atlasUrl,
-      jsonUrl,
-      idleAnim: cfg.spine.idleAnim,
-      motionAnim: cfg.spine.motionAnim,
-    });
-    console.log('[renderer] spine character loaded', {
-      size: character.imageSize,
-      atlasUrl,
-    });
-  } catch (err) {
-    console.error('[renderer] character load FAILED', { atlasUrl, jsonUrl, err });
-    // 抛出去由 boot().catch 显示红色错误条，让你立刻看到失败而不是空白
-    throw err;
-  }
-  root.addChild(character.container);
+  // ---- 4) EventBus + 适配器 ----
+  const bus = new EventBus();
 
-  // 初始缩放：从 config 读，没有就用默认值
-  let currentScale = cfg.meta.displayScale ?? SCALE_DEFAULT;
+  const chat = new ChatAdapter({
+    bus,
+    ask: (text) => window.petApi.chatAsk(text),
+    onToken: (cb) => window.petApi.onChatToken(cb),
+  });
+  chat.start();
 
-  // 把窗口尺寸对齐到 imageSize * scale
-  const applyScale = async (s: number): Promise<void> => {
-    currentScale = Math.min(SCALE_MAX, Math.max(SCALE_MIN, s));
-    root.scale.set(currentScale);
-    const w = Math.max(64, Math.round(character.imageSize.width * currentScale));
-    const h = Math.max(64, Math.round(character.imageSize.height * currentScale));
-    await window.petApi.resizeWindow({ width: w, height: h });
-    console.log('[renderer] scale →', currentScale.toFixed(2), 'window:', w, 'x', h);
+  const tts = new TtsAdapter({
+    bus,
+    speak: (text, voice) => window.petApi.ttsSpeak(text, voice),
+    onState: (cb) => window.petApi.onTtsState(cb),
+  });
+  tts.start();
+
+  const bubble = new SpeechBubble({
+    bus,
+    parent: document.getElementById(STAGE_ID) as HTMLElement,
+    autoHideAfter: 4000,
+  });
+  bubble.start();
+
+  // ---- 5) CharacterManager ----
+  const onScaleChanged = (s: number): void => {
+    setMenuScale(s);
   };
-  await applyScale(currentScale);
 
-  // 拖拽 + 菜单（先把右键菜单注册好菜单项，再 setupContextMenu 一次性挂事件）
-  // 第三个参数是"短按且未拖动"的回调 —— 正好用来触发互动动画
-  setupDrag(
-    dom,
-    () => {},
-    () => {
-      character.triggerTap?.();
+  // 拖拽标志先于 manager 声明：manager 要引用它做防御（避免拖拽期间任何 resizeWindow 穿透到主进程）
+  let isDragging = false;
+
+  const manager = new CharacterManager({
+    bus,
+    root,
+    app,
+    adapter: {
+      loadCharacter: (id) => window.petApi.loadCharacter(id),
+      resizeWindow: (size) => window.petApi.resizeWindow(size),
     },
-  );
-  setupContextMenu(dom);
+    toAbsolute,
+    onScaleChanged,
+    initialScale: cfg.meta?.displayScale ?? SCALE_DEFAULT,
+    isDragging: () => isDragging,
+  });
+  // 启动也走 switchTo：current==null 时自动跳过 fadeOut，避免启动黑屏；
+  // 这样首次加载也有 fadeIn 渐显效果。
+  await manager.switchTo(cfg);
 
-  // 右键菜单：缩放 + 退出
-  registerMenuItem({
-    id: 'shrink',
-    label: '缩小 (-)',
-    onSelect: () => applyScale(currentScale - SCALE_STEP),
+  // ---- 6) 拖拽 + 菜单 ----
+  const drag: DragController = setupDrag(canvas, {
+    onTap: () => {
+      manager.triggerTap();
+    },
+    onDragStateChanged: (dragging) => {
+      isDragging = dragging;
+      bus.emit('drag:state', { dragging });
+    },
   });
+  const ctxMenu = setupContextMenu(canvas);
+
+  // 角色切换菜单（submenu，会动态拉 listCharacters）
+  // 注册占位；真正点击时再 fetch 后添加为 children。
+  const characterSwitchItem: MenuItem = {
+    id: 'switch-character',
+    label: '切换角色',
+    kind: 'submenu',
+    children: [
+      {
+        id: 'switch-character:placeholder',
+        label: '（加载中…）',
+        onSelect: () => {
+          /* placeholder */
+        },
+      },
+    ],
+  };
+  registerMenuItem(characterSwitchItem);
+
+  // 加载角色列表后回填菜单
+  void (async (): Promise<void> => {
+    const list = await window.petApi.listCharacters();
+    if (list.length === 0) return;
+    let activeId = await window.petApi.getActiveCharacter();
+
+    /** 把"切换角色"子菜单的 ✓ 标记按当前 activeId 重画 */
+    const refreshMenuMarks = (): void => {
+      const rebuildLabels = (
+        items: MenuItem[],
+        prefix: string,
+      ): MenuItem[] =>
+        items.map((it) => {
+          if (it.kind === 'submenu') return it;
+          // 从 id "prefix:character-id" 中取出真正的 characterId
+          const cid = it.id.startsWith(`${prefix}:`) ? it.id.slice(prefix.length + 1) : '';
+          const cleanLabel = it.label.replace(/^✓\s*/, '');
+          const nextLabel = cid && cid === activeId ? `✓ ${cleanLabel}` : cleanLabel;
+          return { ...it, label: nextLabel } as MenuItem;
+        });
+      characterSwitchItem.children = rebuildLabels(characterSwitchItem.children, 'switch-character');
+      ctxMenu.rerender();
+    };
+
+    /**
+     * 推导出"激活角色对应的菜单主题名"。
+     * baseId 决定主题：roxy → 浅蓝，ailisi → 浅红；其他角色（无 baseId）回退到 roxy。
+     */
+    const themeNameForActive = (cfgId: string): string => {
+      const cfg = list.find((c) => c.id === cfgId);
+      const base = cfg?.baseId ?? 'roxy';
+      return base;
+    };
+
+    /** 应用主题（背景色等） */
+    const applyTheme = (cfgId: string | null): void => {
+      setMenuTheme(themeNameForActive(cfgId ?? 'roxy'));
+    };
+
+    // 通用切换：只列**日间**模型 —— 夜间版本由系统时间自动切换，不允许手动选
+    characterSwitchItem.kind = 'submenu';
+    const dayList = list.filter((c) => c.variant !== 'night');
+    characterSwitchItem.children = dayList.map<MenuItem>((c) => ({
+      id: `switch-character:${c.id}`,
+      label: `${activeId === c.id ? '✓ ' : ''}${c.displayName}`,
+      onSelect: async (): Promise<void> => {
+        const ok = await window.petApi.setActiveCharacter(c.id);
+        if (ok) activeId = c.id;
+        applyTheme(activeId);
+        refreshMenuMarks();
+        // 主进程会推流回来，这里无需手动 load
+      },
+    }));
+    ctxMenu.rerender();
+
+    // 启动时按当前激活角色应用主题
+    applyTheme(activeId);
+
+    // 自动时间切换：主进程推送新 active 时刷新主题 + ✓ 标记
+    window.petApi.onCharacterChanged((newCfg) => {
+      activeId = newCfg.id;
+      applyTheme(activeId);
+      refreshMenuMarks();
+    });
+  })();
+
+  // "常驻" 开关项
+  const initialPinned = await window.petApi.getPinned();
   registerMenuItem({
-    id: 'enlarge',
-    label: '放大 (+)',
-    onSelect: () => applyScale(currentScale + SCALE_STEP),
-  });
-  registerMenuItem({
-    id: 'reset-scale',
-    label: '默认大小',
-    onSelect: () => applyScale(SCALE_DEFAULT),
+    id: 'pin',
+    label: '常驻',
+    kind: 'toggle',
+    checked: initialPinned,
+    onSelect: async (next: boolean) => {
+      await window.petApi.setPinned(next);
+      ctxMenu.rerender();
+    },
   });
 
-  // 键盘快捷键：+ 放大，- 缩小，0 默认
+  // "调整大小" 二级菜单
+  registerMenuItem({
+    id: 'resize',
+    label: '调整大小',
+    kind: 'submenu',
+    children: [
+      { id: 'shrink', label: '缩小 (-)', onSelect: () => applyScale(manager.scale - SCALE_STEP) },
+      { id: 'enlarge', label: '放大 (+)', onSelect: () => applyScale(manager.scale + SCALE_STEP) },
+      { id: 'reset-scale', label: '默认大小', onSelect: () => applyScale(SCALE_DEFAULT) },
+    ],
+  });
+
+  registerMenuItem({
+    id: 'reset-position',
+    label: '恢复默认位置',
+    onSelect: async () => {
+      await window.petApi.resetWindowPosition();
+    },
+  });
+
+  // ---- 7) 键盘缩放（拖拽期禁用） ----
+  const applyScale = (target: number): void => {
+    if (isDragging) return; // 拖拽中屏蔽 —— 修"长按拖拽窗口变大"
+    void manager.applyScale(target);
+  };
   window.addEventListener('keydown', (e) => {
-    if (e.key === '+' || e.key === '=') {
-      void applyScale(currentScale + SCALE_STEP);
-    } else if (e.key === '-' || e.key === '_') {
-      void applyScale(currentScale - SCALE_STEP);
-    } else if (e.key === '0') {
-      void applyScale(SCALE_DEFAULT);
-    }
+    // 焦点在输入控件时不缩放（保留给气泡 / 后续 dialog 用）
+    const target = e.target as HTMLElement | null;
+    if (target && target.tagName === 'INPUT') return;
+    if (e.key === '+' || e.key === '=') applyScale(manager.scale + SCALE_STEP);
+    else if (e.key === '-' || e.key === '_') applyScale(manager.scale - SCALE_STEP);
+    else if (e.key === '0') applyScale(SCALE_DEFAULT);
   });
 
-  // ticker：Spine 的 autoUpdate 已关闭，由这里统一驱动
+  // ---- 8) ticker ----
   app.ticker.add((ticker) => {
-    character.tick(ticker.deltaMS);
+    if (manager.character) manager.character.tick(ticker.deltaMS);
   });
 
-  // 闲置时每隔 30~90s 随机播一次互动动画，让角色不至于一直只有 idle。
-  // triggerTap 内部也会挡住重复触发，这里再查一次是为了不打断用户刚点出来的动画。
+  // ---- 9) 闲置随机互动 ----
   const scheduleRandomMotion = (): void => {
     window.setTimeout(
       () => {
-        if (!character.isMotionPlaying?.()) character.triggerTap?.();
+        const ch = manager.character;
+        if (ch && !ch.isMotionPlaying?.()) manager.triggerTap();
         scheduleRandomMotion();
       },
       IDLE_MOTION_MIN_MS + Math.random() * IDLE_MOTION_RANGE_MS,
@@ -164,13 +287,20 @@ async function boot(): Promise<void> {
   };
   scheduleRandomMotion();
 
-  // ready-to-show 后通知主进程对齐
+  // ---- 10) 订阅主进程推流的角色激活变更 ----
+  window.petApi.onCharacterChanged((newCfg) => {
+    void manager.switchTo(newCfg);
+  });
+
+  // ---- 11) 启动后对齐一次 ----
   await window.petApi.realignWindow();
+
+  // 把一些对象挂到 window 方便 DevTools 调试
+  (window as unknown as { __pet?: unknown }).__pet = { bus, manager, chat, tts };
 }
 
 boot().catch((err) => {
   console.error('[renderer] boot failed', err);
-  // 在画面上用红色标题显示错误，方便不打开 DevTools 也能看到
   const stage = document.getElementById(STAGE_ID);
   if (stage) {
     const banner = document.createElement('div');

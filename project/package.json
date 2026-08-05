@@ -10,7 +10,9 @@
     "build": "electron-vite build",
     "start": "node -e \"require('child_process').spawnSync('cmd',['/c','set ELECTRON_RUN_AS_NODE=&& electron-vite preview'],{stdio:'inherit',shell:true})\"",
     "run": "node -e \"require('child_process').spawnSync('cmd',['/c','set ELECTRON_RUN_AS_NODE=&& electron .'],{stdio:'inherit',shell:true})\"",
-    "typecheck": "tsc --noEmit -p tsconfig.node.json && tsc --noEmit -p tsconfig.json"
+    "typecheck": "tsc --noEmit -p tsconfig.node.json && tsc --noEmit -p tsconfig.json",
+    "pack": "npm run build && electron-builder --dir",
+    "dist": "npm run build && electron-builder"
   },
   "dependencies": {
     "@esotericsoftware/spine-pixi-v8": "^4.2.119",
@@ -20,8 +22,58 @@
   "devDependencies": {
     "@types/node": "^22.9.0",
     "electron": "^33.2.0",
+    "electron-builder": "^25.1.8",
     "electron-vite": "^2.3.0",
     "typescript": "^5.6.3",
     "vite": "^5.4.11"
+  },
+  "build": {
+    "appId": "com.example.desktopgirlfriend",
+    "productName": "DesktopGirlfriend",
+    "copyright": "Copyright © 2025",
+    "directories": {
+      "output": "release",
+      "buildResources": "build"
+    },
+    "files": [
+      "out/**/*",
+      "package.json"
+    ],
+    "extraResources": [
+      {
+        "from": "assets",
+        "to": "assets"
+      }
+    ],
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        },
+        {
+          "target": "portable",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "artifactName": "${productName}-${version}-${arch}.${ext}"
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "DesktopGirlfriend"
+    },
+    "portable": {
+      "artifactName": "${productName}-${version}-portable.${ext}"
+    },
+    "asar": true,
+    "compression": "normal"
   }
 }

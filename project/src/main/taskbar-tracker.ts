@@ -11,12 +11,20 @@
  *  - 不再监听 metrics change（分辨率 / 任务栏自动隐藏导致的 workArea 缩放）
  *  - 不再有 setInterval 周期跳
  * 用户的窗口位置由用户拖动决定，不被自动接管。
+ *
+ * 多显示器修缮：原来用 `screen.getPrimaryDisplay()`，但渲染层后续可能收到
+ * 'display:on-change' 把窗口放到副屏上 —— 现在 winState 内部统一用
+ * `getDisplayMatching(win.getBounds())`，对所有显示器一视同仁。
  */
 
 import { BrowserWindow, screen } from 'electron';
+import type { WindowState } from './window-state';
 
 export class TaskbarTracker {
-  constructor(private readonly win: BrowserWindow) {}
+  constructor(
+    private readonly win: BrowserWindow,
+    private readonly winState: WindowState,
+  ) {}
 
   start(): void {
     this.alignOnce();
@@ -30,16 +38,10 @@ export class TaskbarTracker {
   }
 
   /**
-   * 把窗口对齐到主 display 工作区右下角。
+   * 把窗口对齐到它所在 display 的工作区右下角。
    * 注意：调用方先确认窗口尺寸已完成。
    */
   alignOnce(): void {
-    if (this.win.isDestroyed()) return;
-    const display = screen.getPrimaryDisplay();
-    const wa = display.workArea;
-    const [w, h] = this.win.getSize();
-    const x = wa.x + wa.width - w;
-    const y = wa.y + wa.height - h;
-    this.win.setPosition(x, y, false);
+    this.winState.alignToDefault(this.win);
   }
 }
