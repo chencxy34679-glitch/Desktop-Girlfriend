@@ -1,24 +1,98 @@
-# 依赖与构建产物
-node_modules/
-out/
-dist/
-dist-electron/
+# ============================================
+# Desktop Girlfriend - 顶层 .gitignore
+# ============================================
 
-# 原始素材备份（与 img/spine/roxy/ 内容重复，不进仓库）
-Live2D/
-
-# 日志与临时文件
-*.log
-npm-debug.log*
-.vite/
-*.tsbuildinfo
-
-# 打包产物
-release/
-
-# 编辑器与系统
+# ---- 编辑器与系统 ----
 .vscode/
 .idea/
 .DS_Store
 Thumbs.db
 desktop.ini
+*.swp
+*.swo
+
+# ---- 日志与临时 ----
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.vite/
+*.tsbuildinfo
+.pnp.*
+.yarn/cache
+.yarn/unplugged
+.yarn/build-state.yml
+
+# ---- 桌面端(项目根 project/)构建产物 ----
+node_modules/
+out/
+dist/
+dist-electron/
+release/
+
+# ---- 原始素材备份(与 img/spine/roxy/ 内容重复,不入仓)----
+Live2D/
+
+# ============================================
+# 后端 server/(M0 新增)
+# ============================================
+server/target/
+server/.mvn/wrapper/maven-wrapper.jar
+server/*.class
+server/*.jar
+server/*.war
+server/dependency-reduced-pom.xml
+server/hs_err_pid*
+server/replay_pid*
+server/.idea/
+server/*.iml
+server/.vscode/
+
+# ---- Spring Boot ----
+server/src/main/resources/application-local.yml
+server/src/main/resources/application-prod.yml
+
+# ============================================
+# 后台 web-admin/(M4 新增)
+# ============================================
+web-admin/node_modules/
+web-admin/dist/
+web-admin/dist-ssr/
+web-admin/.env.local
+web-admin/.env.*.local
+web-admin/*.local
+
+# ============================================
+# 部署 ops/(M0 新增)
+# ============================================
+ops/nginx/certs/
+ops/secrets/
+ops/.env
+ops/*.env
+ops/.env.local
+
+# ============================================
+# 数据库备份 / 凭证
+# ============================================
+*.sql.gz
+*.dump
+*.bak
+*.key
+*.pem
+*.p12
+*.pfx
+
+# ============================================
+# 文档构建产物(若使用 Sphinx / VuePress 等)
+# ============================================
+docs/.vuepress/dist/
+docs/_build/
+docs/site/
+
+# ============================================
+# 个人 / 临时
+# ============================================
+*.tmp
+*~
+.cache/
+.tmp/
