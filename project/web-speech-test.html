@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <title>Web Speech API 验证 — 桌面女友</title>
+  <style>
+    body {
+      font-family: 'Microsoft YaHei', sans-serif;
+      max-width: 720px;
+      margin: 40px auto;
+      padding: 24px;
+      background: #fafafa;
+      color: #222;
+    }
+    h1 { color: #333; }
+    .panel {
+      background: #fff;
+      border: 1px solid #e0e0e0;
+      border-radius: 8px;
+      padding: 16px;
+      margin: 16px 0;
+    }
+    .ok { color: #16a34a; font-weight: bold; }
+    .warn { color: #d97706; font-weight: bold; }
+    .err { color: #dc2626; font-weight: bold; }
+    code {
+      background: #f3f4f6;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-family: 'Consolas', monospace;
+    }
+    button {
+      padding: 8px 16px;
+      font-size: 14px;
+      cursor: pointer;
+      background: #4f46e5;
+      color: #fff;
+      border: none;
+      border-radius: 4px;
+      margin-right: 8px;
+    }
+    button:disabled { background: #9ca3af; cursor: not-allowed; }
+    #log {
+      background: #1f2937;
+      color: #d1d5db;
+      padding: 12px;
+      border-radius: 4px;
+      max-height: 280px;
+      overflow-y: auto;
+      font-family: 'Consolas', monospace;
+      font-size: 12px;
+    }
+  </style>
+</head>
+<body>
+  <h1>🔍 Web Speech API 验证工具</h1>
+  <p>本页面用于验证当前 Chromium 内核(<code>Electron 33.x</code>)是否支持 <code>SpeechRecognition</code>。</p>
+
+  <div class="panel">
+    <h2>1. 环境探测</h2>
+    <div id="env-result">检测中...</div>
+  </div>
+
+  <div class="panel">
+    <h2>2. 实际识别测试</h2>
+    <p>点击下方按钮,允许麦克风权限后说一句中文(比如"今天天气怎么样"),看是否能识别:</p>
+    <button id="btn-start">🎤 开始识别</button>
+    <button id="btn-stop" disabled>⏹ 停止</button>
+    <div id="recognition-text" style="margin-top: 12px; padding: 12px; background: #f9fafb; border-radius: 4px; min-height: 48px;">
+      <em style="color: #999">等待识别...</em>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h2>3. 决策日志</h2>
+    <pre id="log"></pre>
+  </div>
+
+  <script>
+    const log = (msg, type = 'info') => {
+      const el = document.getElementById('log');
+      const ts = new Date().toLocaleTimeString();
+      const prefix = type === 'err' ? '❌' : type === 'warn' ? '⚠️' : 'ℹ️';
+      el.textContent = `[${ts}] ${prefix} ${msg}\n` + el.textContent;
+      console.log(msg);
+    };
+
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    const envEl = document.getElementById('env-result');
+    const btnStart = document.getElementById('btn-start');
+    const btnStop = document.getElementById('btn-stop');
+    const textEl = document.getElementById('recognition-text');
+
+    // --- 1. 环境探测 ---
+    if (SpeechRecognition) {
+      envEl.innerHTML = `
+        <p><span class="ok">✅ SpeechRecognition API 可用</span></p>
+        <p>检测到:<code>${window.SpeechRecognition ? 'window.SpeechRecognition' : 'window.webkitSpeechRecognition'}</code></p>
+        <p>User-Agent:<code>${navigator.userAgent}</code></p>
+        <p>语言版本:<code>${navigator.language}</code></p>
+      `;
+      log('SpeechRecognition API 可用', 'info');
+    } else {
+      envEl.innerHTML = `
+        <p><span class="err">❌ SpeechRecognition API 不可用</span></p>
+        <p>本 Chromium 内核(<code>${navigator.userAgent}</code>)未暴露该 API。</p>
+        <p class="warn">⚠️ 需要回退方案:主进程代理 Whisper API(后端 <code>/v1/stt/transcribe</code>)|</p>
+      `;
+      log('SpeechRecognition API 不可用 — 需要主进程代理 Whisper API', 'err');
+      btnStart.disabled = true;
+    }
+
+    // --- 2. 实际识别测试 ---
+    let recognition = null;
+    if (SpeechRecognition) {
+      btnStart.addEventListener('click', () => {
+        try {
+          recognition = new SpeechRecognition();
+          recognition.lang = 'zh-CN';
+          recognition.continuous = false;
+          recognition.interimResults = true;
+
+          recognition.onstart = () => {
+            log('识别已开始,请说话...', 'info');
+            textEl.innerHTML = '<em style="color: #999">🎤 聆听中...</em>';
+            btnStart.disabled = true;
+            btnStop.disabled = false;
+          };
+
+          recognition.onresult = (event) => {
+            const last = event.results[event.results.length - 1];
+            const text = last[0].transcript;
+            const isFinal = last.isFinal;
+            textEl.innerHTML = isFinal
+              ? `<strong>${text}</strong> <em style="color: #16a34a">(已识别)</em>`
+              : `<em>${text}</em>`;
+            if (isFinal) {
+              log(`识别完成: "${text}"`, 'ok');
+            }
+          };
+
+          recognition.onerror = (event) => {
+            log(`识别错误: ${event.error}`, 'err');
+            if (event.error === 'not-allowed') {
+              textEl.innerHTML = '<em style="color: #dc2626">❌ 麦克风权限被拒绝。请在 Windows 设置 → 隐私 → 麦克风中允许 Electron 访问。</em>';
+            } else if (event.error === 'no-speech') {
+              textEl.innerHTML = '<em style="color: #d97706">⚠️ 未检测到语音,请重试。</em>';
+            } else {
+              textEl.innerHTML = `<em style="color: #dc2626">❌ 错误: ${event.error}</em>`;
+            }
+            btnStart.disabled = false;
+            btnStop.disabled = true;
+          };
+
+          recognition.onend = () => {
+            log('识别结束', 'info');
+            btnStart.disabled = false;
+            btnStop.disabled = true;
+          };
+
+          recognition.start();
+        } catch (e) {
+          log(`启动失败: ${e.message}`, 'err');
+          btnStart.disabled = false;
+          btnStop.disabled = true;
+        }
+      });
+
+      btnStop.addEventListener('click', () => {
+        if (recognition) {
+          recognition.stop();
+          log('手动停止', 'info');
+        }
+      });
+    }
+
+    // 启动时记录
+    log('页面加载完成,等待用户操作', 'info');
+    log(`Electron 检测: window.electron = ${typeof window.electron}`, 'info');
+  </script>
+</body>
+</html>
