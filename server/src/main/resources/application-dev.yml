@@ -1,0 +1,93 @@
+# 开发环境配置
+# 用法: SPRING_PROFILES_ACTIVE=dev mvn spring-boot:run
+
+spring:
+  datasource:
+    # MySQL — 业务数据
+    url: jdbc:mysql://${MYSQL_HOST:localhost}:${MYSQL_PORT:3306}/${MYSQL_DB:desktop_girlfriend}?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&useSSL=false&allowPublicKeyRetrieval=true
+    username: ${MYSQL_USER:root}
+    password: ${MYSQL_PASSWORD:root123}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    hikari:
+      maximum-pool-size: 10
+      minimum-idle: 2
+
+  # PostgreSQL + PgVector — 向量数据(RAG)
+  jpa:
+    database-platform: org.hibernate.dialect.PostgreSQLDialect
+    hibernate:
+      ddl-auto: validate         # 不用 JPA 自动建表,交给 Flyway
+    properties:
+      hibernate:
+        jdbc:
+          time_zone: Asia/Shanghai
+    open-in-view: false
+  datasource-pg:
+    url: jdbc:postgresql://${POSTGRES_HOST:localhost}:${POSTGRES_PORT:5432}/${POSTGRES_DB:desktop_girlfriend_vec}
+    username: ${POSTGRES_USER:dgf}
+    password: ${POSTGRES_PASSWORD:dgf123}
+
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+    baseline-on-migrate: true
+    schemas: desktop_girlfriend
+
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:}
+      database: ${REDIS_DB:0}
+      timeout: 2000ms
+
+  # Spring AI — LLM 配置(OpenAI 兼容协议,DeepSeek / 通义 / OpenAI 都用同一接口)
+  ai:
+    openai:
+      api-key: ${DEEPSEEK_API_KEY:sk-placeholder}
+      base-url: ${DEEPSEEK_BASE_URL:https://api.deepseek.com/v1}
+      chat:
+        options:
+          model: ${DEEPSEEK_MODEL:deepseek-chat}
+          temperature: 0.7
+      embedding:
+        options:
+          model: ${EMBEDDING_MODEL:text-embedding-3-small}
+
+  # Spring AI 向量库(PgVector)
+  ai.vectorstore.pgvector:
+    initialize-schema: false          # schema 走 Flyway 管理
+    dimensions: 1536
+
+# 阿里云 OSS(项目方 Key)
+aliyun:
+  oss:
+    endpoint: ${OSS_ENDPOINT:https://oss-cn-hangzhou.aliyuncs.com}
+    access-key-id: ${OSS_ACCESS_KEY_ID:}
+    access-key-secret: ${OSS_ACCESS_KEY_SECRET:}
+
+# 微信支付(项目方商户号,本地可不填)
+wechat:
+  pay:
+    app-id: ${WECHAT_APPID:}
+    mch-id: ${WECHAT_MCH_ID:}
+    mch-serial-no: ${WECHAT_MCH_SERIAL:}
+    private-key-path: ${WECHAT_PRIVATE_KEY_PATH:}
+    api-v3-key: ${WECHAT_API_V3_KEY:}
+
+# 支付宝(项目方商户号,本地可不填)
+alipay:
+  app-id: ${ALIPAY_APP_ID:}
+  private-key: ${ALIPAY_PRIVATE_KEY:}
+  public-key: ${ALIPAY_PUBLIC_KEY:}
+  gateway: https://openapi.alipay.com/gateway.do
+
+# 高德 API Key(Agent 工具用)
+amap:
+  api-key: ${AMAP_API_KEY:}
+
+logging:
+  level:
+    com.cxy.desktopgf: DEBUG
+    org.springframework.web: DEBUG
+    org.hibernate.SQL: DEBUG

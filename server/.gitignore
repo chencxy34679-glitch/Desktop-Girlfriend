@@ -1,0 +1,50 @@
+# Maven 构建产物
+target/
+*.class
+*.jar
+*.war
+dependency-reduced-pom.xml
+mvnw
+mvnw.cmd
+.mvn/wrapper/maven-wrapper.jar
+
+# IDE
+.idea/
+*.iml
+.vscode/
+.project
+.classpath
+.settings/
+
+# 日志
+*.log
+logs/
+
+# 系统
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Spring Boot DevTools
+spring-boot-devtools.properties
+
+# 环境变量 / 密钥(绝不入仓)
+.env
+.env.local
+.env.*.local
+application-local.yml
+application-prod-real.yml
+secrets/
+*.pem
+*.key
+*.p12
+*.pfx
+
+# 备份
+*.sql.gz
+*.dump
+*.bak
+
+# 测试覆盖率报告
+jacoco.exec
+coverage/

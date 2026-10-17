@@ -1,0 +1,82 @@
+# ============================================
+# 桌面女友 — Spring Boot 主配置
+# ============================================
+# profile 由 SPRING_PROFILES_ACTIVE 环境变量切换(dev / prod)
+
+spring:
+  application:
+    name: desktop-girlfriend-server
+  profiles:
+    active: ${SPRING_PROFILES_ACTIVE:dev}
+  jackson:
+    time-zone: Asia/Shanghai
+    date-format: yyyy-MM-dd HH:mm:ss
+    default-property-inclusion: non_null
+  servlet:
+    multipart:
+      max-file-size: 50MB          # 知识库文件上传上限
+      max-request-size: 50MB
+  thymeleaf:
+    cache: false
+
+server:
+  port: ${SERVER_PORT:8080}
+  compression:
+    enabled: true
+    mime-types: application/json,application/xml,text/html,text/plain
+  tomcat:
+    threads:
+      max: 200
+
+# Spring Boot Actuator(M0 阶段先开基础端点)
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+  endpoint:
+    health:
+      show-details: when_authorized
+      probes:
+        enabled: true
+  metrics:
+    tags:
+      application: ${spring.application.name}
+
+# springdoc OpenAPI 文档
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+    operations-sorter: alpha
+    tags-sorter: alpha
+
+# 自定义配置(desktop-girlfriend.*)
+desktop-girlfriend:
+  version: 0.1.0
+  jwt:
+    access-token-ttl: 3600           # 1 小时
+    refresh-token-ttl: 2592000       # 30 天
+    issuer: desktop-girlfriend
+  cors:
+    allowed-origins: "*"
+  billing:
+    free-chat-daily: 30
+    free-agent-daily: 3
+    enable: true
+  oss:
+    bucket-public: ${OSS_BUCKET_PUBLIC:desktop-girlfriend-public}
+    bucket-update: ${OSS_BUCKET_UPDATE:desktop-girlfriend-update}
+  update:
+    channels: stable,beta,internal
+    default-channel: stable
+
+logging:
+  level:
+    root: INFO
+    com.cxy.desktopgf: DEBUG
+    org.springframework.security: INFO
+    org.flywaydb: INFO
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n"

@@ -50,7 +50,8 @@ server/.vscode/
 
 # ---- Spring Boot ----
 server/src/main/resources/application-local.yml
-server/src/main/resources/application-prod.yml
+# application-prod.yml 应入仓(只是配置结构,不含敏感信息)
+server/src/main/resources/application-prod-real.yml    # 实际部署填敏感 Key 的版本
 
 # ============================================
 # 后台 web-admin/(M4 新增)
