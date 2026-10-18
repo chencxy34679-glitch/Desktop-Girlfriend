@@ -19,7 +19,6 @@ import piniaPluginPersistedstate from 'pinia-plugin-persistedstate';
 //   "."     → dist/index.js
 //   "./styles.css" → styles.css
 // 这里用 subpath 形式导入样式。
-import PxlkitUiKitVue from '@pxlkit/ui-kit-vue';
 import '@pxlkit/ui-kit-vue/styles.css';
 
 import App from './App.vue';
@@ -34,6 +33,8 @@ pinia.use(piniaPluginPersistedstate);
 
 app.use(pinia);
 app.use(router);
-app.use(PxlkitUiKitVue);
+
+// pxlkit/ui-kit-vue 不是 Vue 插件(没有 install 方法),组件在各 view 中按需 import 使用
+// 全局样式已在首行 import '@pxlkit/ui-kit-vue/styles.css' 注入
 
 app.mount('#app');

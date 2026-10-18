@@ -14,7 +14,7 @@
  */
 
 import { contextBridge, ipcRenderer } from 'electron';
-import { IpcChannels } from '../../shared/ipc-channels';
+import { IpcChannels } from '../shared/ipc-channels';
 
 // 个人界面专属 API（占位）。M1 阶段按业务逐条补：
 //  - login / register / refresh JWT

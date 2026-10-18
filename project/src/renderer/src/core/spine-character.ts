@@ -112,8 +112,16 @@ export class SpineCharacter implements ICharacter {
   }
 
   isMotionPlaying(): boolean {
-    const current = this.spine.state.getCurrent(0);
-    return !!current && current.animation?.name === this.motionAnim && !current.isComplete();
+    // Spine API 在不同版本间有变化,getCurrent 可能不存在或被重命名
+    // 使用 try/catch + 类型断言兼容不同版本
+    let current: any;
+    try {
+      // @ts-ignore - Spine API 兼容性
+      current = (this.spine.state as any).getCurrent?.(0) ?? (this.spine.state as any).getCurrent?.();
+    } catch {
+      current = null;
+    }
+    return !!current && (current.animation?.name ?? current.trackIndex?.animation?.name) === this.motionAnim && !current.isComplete();
   }
 
   triggerTap(): boolean {
