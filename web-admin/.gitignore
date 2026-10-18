@@ -1,0 +1,28 @@
+# Web Admin 局部 .gitignore(顶层 .gitignore 已覆盖通用规则)
+
+# 局部构建产物
+node_modules/
+dist/
+dist-ssr/
+
+# 环境变量
+.env
+.env.local
+.env.*.local
+
+# 编辑器
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# 系统
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# 临时 / 日志
+*.log
+npm-debug.log*
+.vite/
+*.tsbuildinfo

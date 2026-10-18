@@ -1,0 +1,54 @@
+/* ============================================================
+ * Desktop Girlfriend Web Admin — Tailwind v4 + pxlkit
+ * ------------------------------------------------------------
+ * 集成方式:
+ *   1. 直接 @import pxlkit 提供的 styles.css(它内部已引入 Tailwind v4)
+ *   2. 不要再次 @import "tailwindcss",会重复加载 Tailwind 基础样式
+ *   3. retro-* token 由 pxlkit 提供,在 :root 上 override 即可换皮
+ *   4. 字体走 index.html 里的 Google Fonts,这里只消费 CSS 变量
+ * ============================================================ */
+@import '@pxlkit/ui-kit-vue/styles.css';
+
+/* 项目方品牌色 override — Desktop Girlfriend 暖米色 + 粉色像素风
+ * pxlkit 内置的 retro-* token 已被外部覆盖,所有组件自动跟随。
+ * 等同 PIXEL_UI_DESIGN.md A.2 章节规范的 token 表。
+ */
+:root {
+  --color-retro-bg: #FBF3E4;          /* 米色背景 */
+  --color-retro-surface: #FFFFFF;      /* 表面(白) */
+  --color-retro-surface-alt: #F5E8C9;  /* 表面 alt(深米) */
+  --color-retro-border: #3D2C2C;       /* 描边(深棕) */
+  --color-retro-text: #3D2C2C;         /* 正文 */
+  --color-retro-text-muted: #7A6A5A;   /* 弱化文字 */
+  --color-retro-primary: #FF9EC4;      /* 主色(粉) */
+  --color-retro-primary-ink: #A23A6B;  /* 主色深(粉棕) */
+  --color-retro-secondary: #FFD9B3;    /* 辅色(浅橙) */
+  --color-retro-accent: #A8E6CF;       /* 强调(薄荷绿) */
+  --color-retro-success: #7CD07C;      /* 成功(绿) */
+  --color-retro-warning: #FFD66B;      /* 警告(黄) */
+  --color-retro-danger: #FF7B7B;       /* 危险(红) */
+  --color-retro-info: #8FC8FF;         /* 信息(蓝) */
+}
+
+@layer base {
+  html,
+  body {
+    margin: 0;
+    padding: 0;
+    height: 100%;
+  }
+
+  body {
+    background-color: var(--color-retro-bg);
+    color: var(--color-retro-text);
+    font-family: var(--font-sans, 'Inter', -apple-system, BlinkMacSystemFont,
+      'Microsoft YaHei', sans-serif);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  /* 像素字体快捷类 — 来自 pxlkit 主题 */
+  .font-pixel {
+    font-family: var(--font-pixel, 'Press Start 2P', monospace);
+  }
+}
