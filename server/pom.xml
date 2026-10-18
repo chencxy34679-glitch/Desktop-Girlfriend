@@ -68,14 +68,15 @@
         </dependency>
 
         <!-- ============ Spring AI ============ -->
+        <!-- Spring AI BOM 管理所有 spring-ai-* 依赖的版本 -->
         <dependency>
             <groupId>org.springframework.ai</groupId>
-            <artifactId>spring-ai-starter-model-openai</artifactId>
-            <!-- DeepSeek / 通义 都兼容 OpenAI 协议,配置 baseUrl 即可 -->
+            <artifactId>spring-ai-openai-spring-boot-starter</artifactId>
+            <!-- DeepSeek / 通义 / OpenAI 都兼容 OpenAI 协议,配置 baseUrl 即可 -->
         </dependency>
         <dependency>
             <groupId>org.springframework.ai</groupId>
-            <artifactId>spring-ai-pgvector-store</artifactId>
+            <artifactId>spring-ai-pgvector-store-spring-boot-starter</artifactId>
         </dependency>
 
         <!-- ============ 数据持久层 ============ -->
