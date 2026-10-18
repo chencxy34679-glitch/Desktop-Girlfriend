@@ -23,6 +23,10 @@ import { IpcChannels } from '../shared/ipc-channels';
 import { registerCharacterIpc } from './ipc/character';
 import { registerChatIpc } from './ipc/chat';
 import { registerTtsIpc } from './ipc/tts';
+import {
+  createPersonalWindow,
+  getPersonalWindow,
+} from './windows/personal-window';
 
 // 关掉 Windows 原生遮挡计算：
 // 透明无边框窗口在快速拖动时，DWM 重新计算窗口遮挡会触发整窗重绘，造成闪烁。
@@ -233,6 +237,18 @@ function registerIpcHandlers(): void {
 
   ipcMain.handle(IpcChannels.WindowExit, () => {
     app.quit();
+  });
+
+  // ---- 个人界面 ----
+  ipcMain.handle(IpcChannels.PersonalOpen, () => {
+    createPersonalWindow();
+    return true;
+  });
+
+  ipcMain.handle(IpcChannels.PersonalClose, () => {
+    const win = getPersonalWindow();
+    if (win && !win.isDestroyed()) win.close();
+    return true;
   });
 
   // ---- 角色 / 聊天 / TTS ----

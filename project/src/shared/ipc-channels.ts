@@ -42,6 +42,10 @@ export const IpcChannels = {
   ChatToken: 'chat:token',
   /** 预留：TTS 合成（主进程调用云端 / 本地 TTS） */
   TtsSpeak: 'tts:speak',
+
+  /** 🆕 个人界面窗口 —— 打开 / 关闭 / ping */
+  PersonalOpen: 'personal:open',
+  PersonalClose: 'personal:close',
 } as const;
 
 export type IpcChannel = (typeof IpcChannels)[keyof typeof IpcChannels];

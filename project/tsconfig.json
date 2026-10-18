@@ -18,8 +18,13 @@
     "baseUrl": ".",
     "paths": {
       "@renderer/*": ["src/renderer/src/*"],
+      "@personal/*": ["src/personal/src/*"],
       "@shared/*": ["src/shared/*"]
     }
   },
-  "include": ["src/renderer/**/*", "src/shared/**/*"]
+  "include": [
+    "src/renderer/**/*",
+    "src/personal/**/*",
+    "src/shared/**/*"
+  ]
 }

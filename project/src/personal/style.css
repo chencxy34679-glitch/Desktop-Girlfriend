@@ -1,0 +1,78 @@
+/**
+ * 个人界面全局样式 —— Tailwind v4 CSS-first 配置。
+ *
+ * @import "tailwindcss" 加载全部 v4 引擎；
+ * @theme 区块声明 design token，所有 token 会被 Tailwind 转成同名的 utility class。
+ *
+ * 这里定义的 retro-* token 与 PIXEL_UI_DESIGN.md 规范对齐，
+ * 即使后续 pxlkit 自带主题切换也可以直接复用。
+ */
+@import "tailwindcss";
+
+@theme {
+  /* 像素 UI 主色板（8-bit 复古调色板） */
+  --color-retro-bg: #FBF3E4;
+  --color-retro-surface: #FFFFFF;
+  --color-retro-surface-alt: #F5E9D5;
+  --color-retro-primary: #FF9EC4;
+  --color-retro-primary-deep: #E96BA0;
+  --color-retro-accent: #6BD0FF;
+  --color-retro-text: #3D2B1F;
+  --color-retro-text-muted: #8A7563;
+  --color-retro-border: #3D2B1F;
+  --color-retro-success: #7CD66B;
+  --color-retro-warn: #FFC857;
+  --color-retro-danger: #FF6B6B;
+  --color-retro-shadow: rgba(61, 43, 31, 0.35);
+
+  /* 像素字体（由 @pxlkit/ui-kit-vue 提供回退） */
+  --font-pixel: "Press Start 2P", "VT323", "Pixelify Sans", "Courier New", monospace;
+  --font-pixel-sans: "Pixelify Sans", "Press Start 2P", system-ui, sans-serif;
+
+  /* 4px 网格 + 8-bit 阴影 */
+  --shadow-pixel-sm: 2px 2px 0 0 var(--color-retro-border);
+  --shadow-pixel: 4px 4px 0 0 var(--color-retro-border);
+  --shadow-pixel-lg: 6px 6px 0 0 var(--color-retro-border);
+}
+
+@layer base {
+  html, body, #app {
+    height: 100%;
+  }
+  html {
+    font-family: var(--font-pixel-sans);
+    background: var(--color-retro-bg);
+    color: var(--color-retro-text);
+    -webkit-font-smoothing: none;
+    font-smooth: never;
+    image-rendering: pixelated;
+  }
+  body {
+    margin: 0;
+    padding: 0;
+    background: var(--color-retro-bg);
+    /* 个人界面允许普通文本操作；与宠物窗口的 user-select:none 区别开 */
+    user-select: auto;
+  }
+}
+
+@layer components {
+  /* 像素标题 —— 业务组件可直接用 */
+  .font-pixel {
+    font-family: var(--font-pixel);
+    letter-spacing: 0.05em;
+  }
+
+  /* 4px 像素边框盒 —— 8-bit 风格通用容器 */
+  .box-pixel {
+    border: 2px solid var(--color-retro-border);
+    box-shadow: var(--shadow-pixel);
+    background: var(--color-retro-surface);
+  }
+
+  /* 占位区域灰底 */
+  .placeholder-block {
+    border: 2px dashed var(--color-retro-border);
+    background: var(--color-retro-surface-alt);
+  }
+}

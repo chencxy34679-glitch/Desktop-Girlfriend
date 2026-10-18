@@ -98,7 +98,39 @@ const api = {
 
   // ---- 退出 ----
   exitApp: (): Promise<void> => ipcRenderer.invoke(IpcChannels.WindowExit),
+
+  // ---- 个人界面 ----
+  /**
+   * 通知主进程：打开个人界面窗口（独立 BrowserWindow）。
+   * 已存在则聚焦，不会重复创建。
+   */
+  openPersonalWindow: (): Promise<boolean> =>
+    ipcRenderer.invoke(IpcChannels.PersonalOpen),
+
+  /**
+   * 通知主进程：关闭个人界面窗口。
+   */
+  closePersonalWindow: (): Promise<boolean> =>
+    ipcRenderer.invoke(IpcChannels.PersonalClose),
 };
+
+/**
+ * 个人界面专属 API（personalApi）。
+ *
+ * 当前 pet preload 同时被桌面宠物窗口和个人界面窗口加载（共用一份
+ * contextBridge），所以 personalApi 也从这里透出。
+ *
+ * 后续如果给 personal 切到独立 preload，把 personalApi 挪到
+ * src/personal/preload.ts 即可，petApi 在那也会保留。
+ */
+const personalApi = {
+  /** 占位：M1 阶段会替换为 login / billing / persona / agent 实际方法 */
+  noop: (): Promise<null> => Promise.resolve(null),
+};
+
+contextBridge.exposeInMainWorld('personalApi', personalApi);
+
+export type PersonalApi = typeof personalApi;
 
 contextBridge.exposeInMainWorld('petApi', api);
 

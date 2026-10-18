@@ -1,11 +1,13 @@
 import { resolve } from 'node:path';
 import { defineConfig, externalizeDepsPlugin } from 'electron-vite';
+import vue from '@vitejs/plugin-vue';
 
 /**
  * electron-vite 配置：
  * - main 进程编译到 out/main
  * - preload 编译到 out/preload
  * - renderer 通过 Vite 构建静态资源到 out/renderer
+ * - personal 通过 Vite 构建个人界面静态资源到 out/personal（独立窗口 + 独立 dev server 端口 5174）
  *
  * 资源（图片等）放在项目根的 assets/ 目录，
  * 通过 Vite 的 publicDir 暴露给渲染进程加载。
@@ -46,10 +48,35 @@ export default defineConfig({
         // 允许 Vite 在 dev 阶段访问项目根目录的图片文件
         allow: ['..'],
       },
+      // 宠物窗口的 dev server 端口（保留默认 5173）
+      port: 5173,
+      strictPort: true,
     },
     resolve: {
       alias: {
         '@renderer': resolve(__dirname, 'src/renderer/src'),
+      },
+    },
+  },
+  // 个人界面 entry —— Vue 3 + Tailwind v4 + @pxlkit/ui-kit-vue
+  // - dev server 端口 5174（与宠物窗口 5173 隔离）
+  // - 生产构建到 out/personal，由主进程加载
+  personal: {
+    root: resolve(__dirname, 'src/personal'),
+    plugins: [vue()],
+    build: {
+      outDir: 'out/personal',
+      rollupOptions: {
+        input: { index: resolve(__dirname, 'src/personal/index.html') },
+      },
+    },
+    server: {
+      port: 5174,
+      strictPort: true,
+    },
+    resolve: {
+      alias: {
+        '@personal': resolve(__dirname, 'src/personal/src'),
       },
     },
   },
