@@ -32,6 +32,11 @@ release/
 
 # ---- 原始素材备份(与 img/spine/roxy/ 内容重复,不入仓)----
 Live2D/
+img/spine/roxy*/         # 洛琪希 Spine(版权:Neowiz/Round8《棕色尘埃2》仅个人学习)
+img/spine/ailisi*/       # 艾莉丝 Spine(版权:Neowiz/Round8《棕色尘埃2》仅个人学习)
+img/spine/roxy_night/    # 同上
+img/spine/ailisi_night/  # 同上
+# 注:已 commit 的版权素材需要 git filter-branch 剥离(见 docs/legal/)
 
 # ============================================
 # 后端 server/(M0 新增)
