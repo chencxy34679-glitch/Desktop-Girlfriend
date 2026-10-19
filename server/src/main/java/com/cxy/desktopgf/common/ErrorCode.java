@@ -68,4 +68,14 @@ public enum ErrorCode {
         this.code = code;
         this.message = message;
     }
+
+    /** 显式 getter,不依赖 Lombok 在枚举上的注解处理。 */
+    public int getCode() {
+        return code;
+    }
+
+    /** 显式 getter,不依赖 Lombok 在枚举上的注解处理。 */
+    public String getMessage() {
+        return message;
+    }
 }

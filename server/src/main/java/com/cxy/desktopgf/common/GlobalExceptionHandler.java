@@ -38,7 +38,7 @@ public class GlobalExceptionHandler {
                 ? mae.getBindingResult().getFieldError() != null ? mae.getBindingResult().getFieldError().getDefaultMessage() : "参数校验失败"
                 : "参数绑定失败";
         log.warn("[参数校验] {} {}: {}", req.getMethod(), req.getRequestURI(), message);
-        return ResponseEntity.ok(Result.fail(ErrorCode.BAD_REQUEST.code, message));
+        return ResponseEntity.ok(Result.fail(ErrorCode.BAD_REQUEST.getCode(), message));
     }
 
     /** Spring Security 鉴权失败 */
@@ -46,7 +46,7 @@ public class GlobalExceptionHandler {
     public ResponseEntity<Result<Void>> handleAuth(AuthenticationException e, HttpServletRequest req) {
         log.warn("[鉴权失败] {} {}: {}", req.getMethod(), req.getRequestURI(), e.getMessage());
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                .body(Result.fail(ErrorCode.UNAUTHORIZED.code, "请先登录"));
+                .body(Result.fail(ErrorCode.UNAUTHORIZED.getCode(), "请先登录"));
     }
 
     /** Spring Security 权限不足 */
@@ -54,7 +54,7 @@ public class GlobalExceptionHandler {
     public ResponseEntity<Result<Void>> handleAccessDenied(AccessDeniedException e, HttpServletRequest req) {
         log.warn("[权限不足] {} {}: {}", req.getMethod(), req.getRequestURI(), e.getMessage());
         return ResponseEntity.status(HttpStatus.FORBIDDEN)
-                .body(Result.fail(ErrorCode.FORBIDDEN.code, "无权限访问"));
+                .body(Result.fail(ErrorCode.FORBIDDEN.getCode(), "无权限访问"));
     }
 
     /** 兜底:未预期异常 */
@@ -62,6 +62,6 @@ public class GlobalExceptionHandler {
     public ResponseEntity<Result<Void>> handleAll(Exception e, HttpServletRequest req) {
         log.error("[系统异常] {} {}", req.getMethod(), req.getRequestURI(), e);
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(Result.fail(ErrorCode.INTERNAL_ERROR.code, ErrorCode.INTERNAL_ERROR.message));
+                .body(Result.fail(ErrorCode.INTERNAL_ERROR.getCode(), ErrorCode.INTERNAL_ERROR.getMessage()));
     }
 }

@@ -29,4 +29,25 @@ public class BizException extends RuntimeException {
     public BizException(ErrorCode errorCode, String detail) {
         this(errorCode.getCode(), errorCode.getMessage() + ": " + detail);
     }
+
+    /**
+     * 静态工厂:等价于 {@code new BizException(errorCode, message)},但更符合调用习惯。
+     *
+     * @param errorCode 错误码枚举
+     * @param message   自定义提示信息
+     * @return 业务异常实例
+     */
+    public static BizException fail(ErrorCode errorCode, String message) {
+        return new BizException(errorCode, message);
+    }
+
+    /**
+     * 静态工厂:使用错误码的默认文案。
+     *
+     * @param errorCode 错误码枚举
+     * @return 业务异常实例
+     */
+    public static BizException fail(ErrorCode errorCode) {
+        return new BizException(errorCode);
+    }
 }

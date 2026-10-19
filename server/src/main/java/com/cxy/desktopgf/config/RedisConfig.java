@@ -4,9 +4,6 @@ import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.PropertyAccessor;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
-import org.redisson.Redisson;
-import org.redisson.api.RedissonClient;
-import org.redisson.config.Config;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -22,7 +19,7 @@ import org.springframework.data.redis.serializer.StringRedisSerializer;
  * 提供两个核心 Bean:
  * <ul>
  *     <li>{@link StringRedisTemplate} — Spring Boot 自动装配,这里再次声明以固定序列化器</li>
- *     <li>{@link RedissonClient} — 分布式锁 / 限流 Lua / 分布式集合的底层客户端</li>
+ *     <li>{@link RedisTemplate} — 对象序列化模板,用于对话缓存 / 限流计数等</li>
  * </ul>
  * </p>
  * <p>
@@ -82,22 +79,9 @@ public class RedisConfig {
         return template;
     }
 
-    /**
-     * Redisson 客户端,用于分布式锁、限流 Lua、Bitmap 等场景。
-     */
-    @Bean(destroyMethod = "shutdown")
-    public RedissonClient redissonClient() {
-        Config config = new Config();
-        String address = "redis://" + redisHost + ":" + redisPort;
-        config.useSingleServer()
-                .setAddress(address)
-                .setDatabase(redisDatabase)
-                .setPassword(redisPassword == null || redisPassword.isBlank() ? null : redisPassword)
-                .setConnectionMinimumIdleSize(4)
-                .setConnectionPoolSize(16);
-        log.info("Redisson 客户端初始化, address={}, database={}", address, redisDatabase);
-        return Redisson.create(config);
-    }
+    // TODO(M2 计费阶段):分布式锁 / 限流 Lua / Bitmap 场景需要 Redisson,
+    //  届时再引入 redisson-spring-boot-starter 依赖并补充 redissonClient() Bean。
+    //  当前阶段用 Spring Data Redis 的 RedisTemplate.setEnableTransactionSupport 即可满足。
 
     /**
      * 构建支持 JDK 8+ 时间类的 ObjectMapper,禁用日期时间戳。

@@ -29,7 +29,7 @@
         <spring-ai.version>1.0.0-M6</spring-ai.version>
         <mybatis-plus.version>3.5.9</mybatis-plus.version>
         <jjwt.version>0.12.6</jjwt.version>
-        <aliyun-oss.version>3.17.4</aliyun-oss.version>
+        <aliyun-oss.version>3.18.1</aliyun-oss.version>
         <weixin-java.version>4.6.4.B</weixin-java.version>
         <alipay.version>4.40.230.ALL</alipay.version>
         <springdoc.version>2.6.0</springdoc.version>
@@ -154,19 +154,19 @@
             <version>${aliyun-oss.version}</version>
         </dependency>
 
-        <!-- ============ 微信支付 ============ -->
+        <!-- ============ 微信支付 / 支付宝 ============ -->
+        <!-- M4 支付阶段再引入，当前版本号在阿里云镜像不可用，先移除避免依赖解析失败：
         <dependency>
             <groupId>com.github.wechatpay-apiv3</groupId>
             <artifactId>weixin-java-pay</artifactId>
             <version>${weixin-java.version}</version>
         </dependency>
-
-        <!-- ============ 支付宝 ============ -->
         <dependency>
             <groupId>com.alipay.sdk</groupId>
             <artifactId>alipay-sdk-java</artifactId>
             <version>${alipay.version}</version>
         </dependency>
+        -->
 
         <!-- ============ API 文档(Swagger UI) ============ -->
         <dependency>
@@ -192,6 +192,9 @@
             <artifactId>spring-boot-starter-test</artifactId>
             <scope>test</scope>
         </dependency>
+        <!-- Mockito 5.x 已把 inline mock maker 内置到 mockito-core,
+             通过 src/test/resources/mockito-extensions/org.mockito.plugins.MockMaker 启用,
+             无需额外依赖。 -->
         <dependency>
             <groupId>org.springframework.security</groupId>
             <artifactId>spring-security-test</artifactId>

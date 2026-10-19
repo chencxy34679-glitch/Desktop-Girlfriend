@@ -11,6 +11,9 @@ desktop.ini
 *.swp
 *.swo
 
+# ---- git 备份目录(git filter-repo 前的历史快照,数 GB,不入仓)----
+.git.backup-*/
+
 # ---- 日志与临时 ----
 *.log
 npm-debug.log*

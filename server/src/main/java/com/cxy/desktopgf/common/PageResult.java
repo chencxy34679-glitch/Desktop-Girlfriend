@@ -67,13 +67,16 @@ public class PageResult<T> {
     }
 
     /**
-     * 类型转换:复用分页元数据,把 records 从 {@code S} 映射成 {@code T}。
+     * 类型转换:复用分页元数据,把 records 从 {@code T} 映射成 {@code R}。
      * <p>
      * 典型用法:把 {@code PageResult<UserDO>} 转成 {@code PageResult<UserVO>}。
      * </p>
+     *
+     * @param mapper 元素映射函数
+     * @return 映射后的分页结果,分页元数据(总数/页码/每页条数)保持不变
      */
-    public <S, T> PageResult<T> map(Function<S, T> mapper) {
-        List<T> mapped = this.records == null
+    public <R> PageResult<R> map(Function<T, R> mapper) {
+        List<R> mapped = this.records == null
                 ? Collections.emptyList()
                 : this.records.stream().map(mapper).collect(Collectors.toList());
         return new PageResult<>(mapped, this.total, this.page, this.size);

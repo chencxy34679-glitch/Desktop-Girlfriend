@@ -56,17 +56,21 @@ public class OssConfig {
 
     /**
      * 注册 {@link OSS} Bean,作为全局唯一的 OSS 客户端。
+     * <p>
+     * OSS 未配置时返回 {@code null},让依赖注入处改为惰性初始化,
+     * 避免开发期因为没有 AK/SK 导致整个应用启动失败。
+     * </p>
      */
     @Bean(destroyMethod = "shutdown")
     public OSS ossClient() {
-        if (endpoint == null || endpoint.isBlank()) {
-            log.warn("aliyun.oss.endpoint 未配置, OSS 客户端将延迟到首次调用时初始化");
+        if (endpoint == null || endpoint.isBlank()
+                || accessKeyId == null || accessKeyId.isBlank()) {
+            log.warn("aliyun.oss.endpoint / access-key-id 未配置, OSS 客户端将不注册(M2 阶段接入 OSS 时再配置)");
+            return null;
         }
-        CredentialsProvider credentialsProvider = new DefaultCredentialProvider(accessKeyId, accessKeySecret);
-        OSS client = new OSSClientBuilder()
-                .endpoint(endpoint)
-                .credentialsProvider(credentialsProvider)
-                .build();
+        CredentialsProvider credentialsProvider =
+                new DefaultCredentialProvider(accessKeyId, accessKeySecret);
+        OSS client = new OSSClientBuilder().build(endpoint, credentialsProvider);
         log.info("OSS 客户端初始化完成, endpoint={}, defaultBucket={}", endpoint, bucket);
         return client;
     }
