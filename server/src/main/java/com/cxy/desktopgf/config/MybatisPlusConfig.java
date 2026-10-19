@@ -65,6 +65,10 @@ public class MybatisPlusConfig {
      * 使用 MetaObjectHandler 在 insert/update 阶段由框架自动写入,
      * 不再要求业务层手动 setTime(),降低遗漏风险。
      * </p>
+     * <p>
+     * 字段名必须与实体上的 Java 属性名一致(驼峰),MyBatis-Plus 会自行映射到下划线列:
+     * {@code createdAt} → {@code created_at},{@code updatedAt} → {@code updated_at}。
+     * </p>
      */
     @Bean
     public MetaObjectHandler metaObjectHandler() {
@@ -72,13 +76,13 @@ public class MybatisPlusConfig {
             @Override
             public void insertFill(MetaObject metaObject) {
                 LocalDateTime now = LocalDateTime.now();
-                this.strictInsertFill(metaObject, "createTime", LocalDateTime.class, now);
-                this.strictInsertFill(metaObject, "updateTime", LocalDateTime.class, now);
+                this.strictInsertFill(metaObject, "createdAt", LocalDateTime.class, now);
+                this.strictInsertFill(metaObject, "updatedAt", LocalDateTime.class, now);
             }
 
             @Override
             public void updateFill(MetaObject metaObject) {
-                this.strictUpdateFill(metaObject, "updateTime",
+                this.strictUpdateFill(metaObject, "updatedAt",
                         LocalDateTime.class, LocalDateTime.now());
             }
         };

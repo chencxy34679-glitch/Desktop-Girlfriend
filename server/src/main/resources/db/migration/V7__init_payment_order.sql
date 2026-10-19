@@ -14,7 +14,7 @@ CREATE TABLE payment_order (
   paid_at             DATETIME     NULL,
   closed_at           DATETIME     NULL,
   channel_trade_no    VARCHAR(64)  NULL COMMENT '微信/支付宝流水号',
-  channel_raw         JSON         NULL COMMENT '渠道回调原始数据',
+  channel_raw         LONGTEXT        NULL COMMENT '渠道回调原始数据',
   created_at          DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at          DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   INDEX idx_user_status (user_id, status)

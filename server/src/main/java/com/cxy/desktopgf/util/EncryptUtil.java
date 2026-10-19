@@ -56,27 +56,51 @@ public class EncryptUtil {
      */
     private byte[] keyBytes;
 
+    /**
+     * 启动时尝试加载密钥。
+     * <p>
+     * 未配置 {@code DGF_ENCRYPT_KEY} 时只打 warn 不抛异常 —— 本工具当前是预留能力,
+     * 不应在开发期阻塞整个应用启动;真正调用 {@link #encrypt(String)} 时才会因
+     * {@code keyBytes == null} 抛错,提示补齐配置。
+     * </p>
+     */
     @PostConstruct
     public void init() {
         String hex = System.getenv("DGF_ENCRYPT_KEY");
         if (hex == null || hex.isBlank()) {
-            throw new IllegalStateException(
-                    "环境变量 DGF_ENCRYPT_KEY 未配置,EncryptUtil 启动失败");
+            log.warn("环境变量 DGF_ENCRYPT_KEY 未配置,EncryptUtil 处于未初始化状态(当前无业务依赖,不影响启动)");
+            return;
         }
         if (hex.length() != 64) {
-            throw new IllegalStateException(
-                    "DGF_ENCRYPT_KEY 必须是 64 个十六进制字符(32 字节),当前长度=" + hex.length());
+            log.warn("DGF_ENCRYPT_KEY 必须是 64 个十六进制字符(32 字节),当前长度={},EncryptUtil 未初始化", hex.length());
+            return;
         }
         try {
-            this.keyBytes = hexToBytes(hex);
+            byte[] decoded = hexToBytes(hex);
+            if (decoded.length != 32) {
+                log.warn("DGF_ENCRYPT_KEY 解码后必须为 32 字节,实际={},EncryptUtil 未初始化", decoded.length);
+                return;
+            }
+            this.keyBytes = decoded;
         } catch (IllegalArgumentException ex) {
-            throw new IllegalStateException("DGF_ENCRYPT_KEY 不是合法的 hex 字符串", ex);
-        }
-        if (this.keyBytes.length != 32) {
-            throw new IllegalStateException(
-                    "DGF_ENCRYPT_KEY 解码后必须为 32 字节,实际=" + this.keyBytes.length);
+            log.warn("DGF_ENCRYPT_KEY 不是合法的 hex 字符串,EncryptUtil 未初始化", ex);
+            return;
         }
         log.info("EncryptUtil 初始化完成(AES-256-GCM)");
+    }
+
+    /**
+     * 懒加载密钥,供 encrypt / decrypt 在未走 {@link #init()} 时兜底。
+     *
+     * @return 32 字节密钥
+     * @throws IllegalStateException 密钥未配置或不合法
+     */
+    private byte[] requireKey() {
+        if (keyBytes == null) {
+            throw new IllegalStateException(
+                    "DGF_ENCRYPT_KEY 未配置或非法,请生成 32 字节 hex 密钥后注入环境变量");
+        }
+        return keyBytes;
     }
 
     /**
@@ -94,7 +118,7 @@ public class EncryptUtil {
             SecureRandom random = new SecureRandom();
             random.nextBytes(iv);
             Cipher cipher = Cipher.getInstance(AES_GCM_TRANSFORMATION);
-            cipher.init(Cipher.ENCRYPT_MODE, new SecretKeySpec(keyBytes, "AES"),
+            cipher.init(Cipher.ENCRYPT_MODE, new SecretKeySpec(requireKey(), "AES"),
                     new GCMParameterSpec(GCM_TAG_BITS, iv));
             byte[] cipherBytes = cipher.doFinal(plaintext.getBytes(StandardCharsets.UTF_8));
             byte[] ivAndCipher = new byte[GCM_IV_LENGTH + cipherBytes.length];
@@ -124,7 +148,7 @@ public class EncryptUtil {
             byte[] iv = new byte[GCM_IV_LENGTH];
             System.arraycopy(ivAndCipher, 0, iv, 0, GCM_IV_LENGTH);
             Cipher cipher = Cipher.getInstance(AES_GCM_TRANSFORMATION);
-            cipher.init(Cipher.DECRYPT_MODE, new SecretKeySpec(keyBytes, "AES"),
+            cipher.init(Cipher.DECRYPT_MODE, new SecretKeySpec(requireKey(), "AES"),
                     new GCMParameterSpec(GCM_TAG_BITS, iv));
             byte[] plainBytes = cipher.doFinal(ivAndCipher, GCM_IV_LENGTH,
                     ivAndCipher.length - GCM_IV_LENGTH);

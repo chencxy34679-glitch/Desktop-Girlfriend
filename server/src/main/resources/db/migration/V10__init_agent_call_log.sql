@@ -10,7 +10,7 @@ CREATE TABLE agent_call_log (
   character_id    BIGINT       NULL COMMENT '创建角色前可能为空',
   conversation_id VARCHAR(64)  NULL,
   tool_name       VARCHAR(64)  NOT NULL,
-  input_args      JSON         NULL,
+  input_args      LONGTEXT      NULL,
   output_result   TEXT         NULL,
   status          VARCHAR(16)  NOT NULL COMMENT 'success / failed / denied',
   error_message   TEXT         NULL,

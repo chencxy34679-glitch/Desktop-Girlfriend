@@ -2,7 +2,6 @@ package com.cxy.desktopgf.module.auth.mapper;
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.cxy.desktopgf.module.auth.entity.UserDevice;
-import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 import org.apache.ibatis.annotations.Select;
 
@@ -11,7 +10,7 @@ import java.util.Optional;
 /**
  * 用户设备 Mapper。
  */
-@Mapper
+// @Mapper 由 @MapperScan 统一扫描,此处不再重复标注
 public interface UserDeviceMapper extends BaseMapper<UserDevice> {
 
     /**

@@ -13,6 +13,8 @@ import com.cxy.desktopgf.module.auth.service.AuthService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -49,11 +51,28 @@ public class AuthController {
      */
     @PostMapping("/register")
     public Result<AuthResponse> register(@Valid @RequestBody UpgradeRegisterRequest req) {
-        Long userId = AuthContext.getUserId();
-        if (userId == null) {
-            throw new BizException(ErrorCode.UNAUTHORIZED);
-        }
+        Long userId = currentUserId();
         return Result.ok(authService.upgradeRegister(userId, req));
+    }
+
+    /**
+     * 解析当前请求的用户 ID。
+     * <p>
+     * 优先从 SecurityContext 取(由 {@code JwtAuthenticationFilter} 写入,
+     * principal 直接是 userId);filter 未生效的路径回退到 {@link AuthContext}
+     * (由 {@code AuthInterceptor} 写入)。两者都拿不到时抛 401。
+     * </p>
+     */
+    private Long currentUserId() {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth != null && auth.getPrincipal() instanceof Long userId) {
+            return userId;
+        }
+        Long userId = AuthContext.getUserId();
+        if (userId != null) {
+            return userId;
+        }
+        throw new BizException(ErrorCode.UNAUTHORIZED);
     }
 
     /**

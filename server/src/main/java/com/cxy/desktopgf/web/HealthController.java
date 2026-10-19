@@ -72,8 +72,8 @@ public class HealthController {
     }
 
     private String checkPostgres() {
-        // TODO M2 阶段:JPA 实体管理器探活
-        return "not_implemented";
+        // M2 阶段启用 PgVector(RAG)后再实现探活
+        return "not_configured";
     }
 
     private String checkRedis() {

@@ -28,6 +28,21 @@ server:
     threads:
       max: 200
 
+# MyBatis-Plus 全局配置(所有 profile 生效)
+mybatis-plus:
+  configuration:
+    # 下划线列名 ↔ 驼峰属性自动映射:user_account.password_hash → UserAccount.passwordHash
+    map-underscore-to-camel-case: true
+  global-config:
+    banner: false
+    db-config:
+      # 主键策略:雪花 ID,与 @TableId(ASSIGN_ID) / IdGenerator 共用同一发号器
+      id-type: assign_id
+      # 逻辑删除:user_account.deleted = 0 未删 / 1 已删
+      logic-delete-field: deleted
+      logic-delete-value: 1
+      logic-not-delete-value: 0
+
 # Spring Boot Actuator(M0 阶段先开基础端点)
 management:
   endpoints:

@@ -16,7 +16,7 @@ CREATE TABLE `character` (
   cover_url       VARCHAR(512) NOT NULL,
   tags            VARCHAR(512) NOT NULL DEFAULT '',
   persona_system  TEXT         NOT NULL COMMENT '默认 system prompt',
-  persona_few_shot JSON        NULL COMMENT '默认 few-shot examples',
+  persona_few_shot LONGTEXT    NULL COMMENT '默认 few-shot examples',
   tts_voice_id    VARCHAR(64)  NOT NULL COMMENT '默认 TTS 音色(per 角色)',
   tts_provider    VARCHAR(32)  NOT NULL DEFAULT 'volcengine',
   temperature     DECIMAL(3,2) NOT NULL DEFAULT 0.7,

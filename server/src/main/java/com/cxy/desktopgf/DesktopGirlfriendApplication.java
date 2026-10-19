@@ -18,6 +18,9 @@ import org.springframework.scheduling.annotation.EnableScheduling;
  * @author cxy
  */
 @SpringBootApplication
+// Mapper 扫描:业务模块统一放在 com.cxy.desktopgf.module.*.mapper 下。
+// 注意 Mapper 接口不要再额外标注 @Mapper,否则会与本扫描重复注册,
+// 启动时报 "Invalid value type for attribute 'factoryBeanObjectType'"。
 @MapperScan("com.cxy.desktopgf.module.**.mapper")
 @EnableAsync
 @EnableScheduling
