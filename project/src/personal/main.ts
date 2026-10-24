@@ -23,6 +23,7 @@ import '@pxlkit/ui-kit-vue/styles.css';
 
 import App from './App.vue';
 import { router } from './router';
+import { useAuthStore } from './stores/auth';
 
 import './style.css';
 
@@ -38,3 +39,19 @@ app.use(router);
 // 全局样式已在首行 import '@pxlkit/ui-kit-vue/styles.css' 注入
 
 app.mount('#app');
+
+/**
+ * 启动时自动完成鉴权。
+ *
+ * 逻辑在 auth store 的 bootstrap() 里：
+ *  - 本地有 refreshToken → 先续期（换新 token）
+ *  - 续期失败 → 退化成匿名注册
+ *
+ * 匿名可用是后端的设计，所以首次打开个人界面就能拿到可用会话，
+ * 不需要用户手动注册。
+ */
+const authStore = useAuthStore(pinia);
+void authStore.bootstrap().catch((err: unknown) => {
+  // 后端没起来时不应该阻塞界面，这里只记日志
+  console.warn('[personal] auth bootstrap 失败:', err);
+});

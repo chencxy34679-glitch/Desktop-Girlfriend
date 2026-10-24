@@ -75,4 +75,84 @@
     border: 2px dashed var(--color-retro-border);
     background: var(--color-retro-surface-alt);
   }
+
+  /* 像素输入框 */
+  .input-pixel {
+    width: 100%;
+    padding: 0.5rem 0.75rem;
+    font-size: 0.875rem;
+    color: var(--color-retro-text);
+    background: var(--color-retro-surface);
+    border: 2px solid var(--color-retro-border);
+    box-shadow: inset 2px 2px 0 0 var(--color-retro-surface-alt);
+    outline: none;
+  }
+  .input-pixel:focus {
+    box-shadow:
+      inset 2px 2px 0 0 var(--color-retro-surface-alt),
+      0 0 0 2px var(--color-retro-primary);
+  }
+  .input-pixel::placeholder {
+    color: var(--color-retro-text-muted);
+  }
+  .input-pixel:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+
+  /* 像素按钮 */
+  .btn-pixel {
+    padding: 0.5rem 1rem;
+    font-size: 0.75rem;
+    color: var(--color-retro-text);
+    background: var(--color-retro-primary);
+    border: 2px solid var(--color-retro-border);
+    box-shadow: var(--shadow-pixel-sm);
+    cursor: pointer;
+    transition: transform 80ms steps(2);
+  }
+  .btn-pixel:hover:not(:disabled) {
+    background: var(--color-retro-primary-deep);
+  }
+  .btn-pixel:active:not(:disabled) {
+    transform: translate(2px, 2px);
+    box-shadow: none;
+  }
+  .btn-pixel:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+  .btn-pixel--ghost {
+    background: var(--color-retro-surface-alt);
+  }
+  .btn-pixel--ghost:hover:not(:disabled) {
+    background: var(--color-retro-surface-alt);
+    filter: brightness(0.96);
+  }
+  .btn-pixel--danger {
+    background: var(--color-retro-danger);
+  }
+  .btn-pixel--success {
+    background: var(--color-retro-success);
+  }
+
+  /* 表单标签 / 提示文字（不用像素字体，只用像素描边风格） */
+  .label-pixel {
+    display: block;
+    font-size: 0.75rem;
+    color: var(--color-retro-text-muted);
+    margin-bottom: 0.25rem;
+  }
+
+  /* 状态徽标 */
+  .badge-pixel {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    padding: 0.125rem 0.5rem;
+    font-size: 0.625rem;
+    color: var(--color-retro-text);
+    background: var(--color-retro-surface-alt);
+    border: 2px solid var(--color-retro-border);
+  }
 }

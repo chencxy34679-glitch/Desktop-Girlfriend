@@ -7,7 +7,7 @@
   "license": "MIT",
   "scripts": {
     "dev": "node scripts/dev.mjs",
-    "build": "electron-vite build",
+    "build": "electron-vite build && npm run build:personal",
     "start": "node -e \"require('child_process').spawnSync('cmd',['/c','set ELECTRON_RUN_AS_NODE=&& electron-vite preview'],{stdio:'inherit',shell:true})\"",
     "run": "node -e \"require('child_process').spawnSync('cmd',['/c','set ELECTRON_RUN_AS_NODE=&& electron .'],{stdio:'inherit',shell:true})\"",
     "typecheck:node": "tsc --noEmit -p tsconfig.node.json",
@@ -16,7 +16,9 @@
     "pack": "npm run build && electron-builder --dir",
     "dist": "npm run build && electron-builder",
     "dev:electron": "node -e \"require('child_process').spawnSync('cmd',['/c','set ELECTRON_RUN_AS_NODE=&& electron-vite dev'],{stdio:'inherit',shell:true})\"",
-    "dev:personal": "vite --config vite.personal.config.mjs"
+    "dev:personal": "vite --config vite.personal.config.mjs",
+    "build:personal": "vite build --config vite.personal.config.mjs",
+    "build:renderer": "electron-vite build"
   },
   "dependencies": {
     "@esotericsoftware/spine-pixi-v8": "^4.2.119",

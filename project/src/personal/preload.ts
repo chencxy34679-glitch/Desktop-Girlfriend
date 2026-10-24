@@ -15,13 +15,19 @@
 
 import { contextBridge, ipcRenderer } from 'electron';
 import { IpcChannels } from '../shared/ipc-channels';
+import { createPersonalAuthApi } from '../shared/auth-bridge';
 
-// 个人界面专属 API（占位）。M1 阶段按业务逐条补：
-//  - login / register / refresh JWT
+// 个人界面专属 API。鉴权部分与 src/preload/index.ts 共用同一份实现
+// （src/shared/auth-bridge.ts），避免两份 preload 行为漂移。
+// M1 阶段按业务逐条补：
 //  - billing plans / 支付订单 / 积分余额
 //  - persona 设置 / agent tools / RAG 文档
 const personalApi = {
-  /** 占位：M1 阶段会替换成实际的 auth 方法 */
+  ...createPersonalAuthApi((channel, ...args) =>
+    ipcRenderer.invoke(channel, ...args),
+  ),
+
+  /** 占位：M1 阶段会替换成实际的业务方法 */
   noop: (): Promise<null> => Promise.resolve(null),
 };
 

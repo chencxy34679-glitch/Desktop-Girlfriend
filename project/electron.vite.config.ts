@@ -58,26 +58,12 @@ export default defineConfig({
       },
     },
   },
-  // 个人界面 entry —— Vue 3 + Tailwind v4 + @pxlkit/ui-kit-vue
-  // - dev server 端口 5174（与宠物窗口 5173 隔离）
-  // - 生产构建到 out/personal，由主进程加载
-  personal: {
-    root: resolve(__dirname, 'src/personal'),
-    plugins: [vue()],
-    build: {
-      outDir: 'out/personal',
-      rollupOptions: {
-        input: { index: resolve(__dirname, 'src/personal/index.html') },
-      },
-    },
-    server: {
-      port: 5174,
-      strictPort: true,
-    },
-    resolve: {
-      alias: {
-        '@personal': resolve(__dirname, 'src/personal/src'),
-      },
-    },
-  },
+  // 注意：个人界面（personal）**不在这里配置**。
+  // electron-vite 2.3.0 只认 main / preload / renderer 三个 entry，
+  // 额外的 key 会被静默忽略（且类型报错 TS2769），导致生产构建漏掉 out/personal。
+  //
+  // 个人界面由独立配置负责：
+  //   dev  → vite --config vite.personal.config.mjs        (端口 5174)
+  //   build→ vite build --config vite.personal.config.mjs  (输出 out/personal)
+  // 详见 vite.personal.config.ts 与 scripts/dev.mjs。
 });

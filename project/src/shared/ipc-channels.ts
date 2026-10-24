@@ -46,6 +46,17 @@ export const IpcChannels = {
   /** 🆕 个人界面窗口 —— 打开 / 关闭 / ping */
   PersonalOpen: 'personal:open',
   PersonalClose: 'personal:close',
+
+  /** 🆕 鉴权模块 —— 匿名注册（拿匿名身份，首次启动自动调用） */
+  AuthAnonymous: 'auth:anonymous',
+  /** 🆕 鉴权模块 —— 匿名升级为正式用户（需要带匿名 access token） */
+  AuthRegister: 'auth:register',
+  /** 🆕 鉴权模块 —— 用户名密码登录 */
+  AuthLogin: 'auth:login',
+  /** 🆕 鉴权模块 —— 用 refresh token 续期 */
+  AuthRefresh: 'auth:refresh',
+  /** 🆕 鉴权模块 —— 读取设备 / 运行环境信息与当前后端地址 */
+  AuthGetProfile: 'auth:profile',
 } as const;
 
 export type IpcChannel = (typeof IpcChannels)[keyof typeof IpcChannels];

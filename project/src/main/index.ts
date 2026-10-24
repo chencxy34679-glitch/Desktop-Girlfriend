@@ -23,6 +23,7 @@ import { IpcChannels } from '../shared/ipc-channels';
 import { registerCharacterIpc } from './ipc/character';
 import { registerChatIpc } from './ipc/chat';
 import { registerTtsIpc } from './ipc/tts';
+import { registerAuthIpc } from './ipc/auth';
 import {
   createPersonalWindow,
   getPersonalWindow,
@@ -255,6 +256,10 @@ function registerIpcHandlers(): void {
   registerCharacterIpc(ipcMain, () => mainWindow, autoTimeScheduler);
   registerChatIpc(ipcMain, () => mainWindow);
   registerTtsIpc(ipcMain, () => mainWindow);
+
+  // ---- 鉴权（后端 auth 模块）----
+  // renderer 不能直接访问后端，统一走主进程转发：加 token、超时、日志都在这一层。
+  registerAuthIpc(ipcMain);
 }
 
 app.whenReady().then(() => {

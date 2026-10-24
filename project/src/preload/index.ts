@@ -12,6 +12,7 @@
 
 import { contextBridge, ipcRenderer } from 'electron';
 import { IpcChannels } from '../shared/ipc-channels';
+import { createPersonalAuthApi } from '../shared/auth-bridge';
 import type { CharacterConfig, CharacterSummary } from '../shared/character-config';
 
 const api = {
@@ -122,9 +123,16 @@ const api = {
  *
  * 后续如果给 personal 切到独立 preload，把 personalApi 挪到
  * src/personal/preload.ts 即可，petApi 在那也会保留。
+ *
+ * 鉴权部分（auth:*）的实现放在 src/shared/auth-bridge.ts，
+ * 两份 preload 共用同一份逻辑，避免行为漂移。
  */
 const personalApi = {
-  /** 占位：M1 阶段会替换为 login / billing / persona / agent 实际方法 */
+  ...createPersonalAuthApi((channel, ...args) =>
+    ipcRenderer.invoke(channel, ...args),
+  ),
+
+  /** 占位：M1 阶段会替换为 billing / persona / agent 实际方法 */
   noop: (): Promise<null> => Promise.resolve(null),
 };
 
