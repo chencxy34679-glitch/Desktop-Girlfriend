@@ -1,8 +1,61 @@
-# Desktop Girlfriend — 桌面宠物
+# Desktop Girlfriend — 桌面女友
 
-Electron + PixiJS + Spine 骨骼动画实现的 Windows 桌面宠物。
+**AI Agent 桌面伴侣**:桌面上有个虚拟角色,能和你对话,也能调用工具替你做事(查天气 / 记笔记 / 发邮件 / 定日程)。
 
-角色素材使用《棕色尘埃2》的洛琪希（无职转生联动）。
+> 技术栈:Electron 33 + Vue 3 + PixiJS 8 + Spine 骨骼动画 + Spring Boot 3 + Spring AI
+
+---
+
+## 📁 仓库结构(monorepo)
+
+```
+tools/Desktop Girlfriend/
+├── project/        桌面端 —— Electron + Vue 3 + pxlkit-vue
+│   ├── src/renderer/    宠物渲染进程(PixiJS + Spine)
+│   ├── src/personal/    个人界面(独立 BrowserWindow,11 个面板)
+│   ├── src/main/        主进程
+│   ├── src/preload/     contextBridge
+│   └── src/shared/      主/渲染共享类型
+├── server/         后端 —— Spring Boot 3 + Spring AI 1.0
+│   ├── module/auth/      匿名注册 / 升级注册 / 登录 / token 刷新
+│   └── db/migration/     Flyway 迁移(16 张表)
+├── web-admin/      后台管理 —— Vue 3 + pxlkit-vue
+├── ops/            部署 —— Nginx / Jenkins / 备份脚本
+└── docs/           文档 —— 设计 / 部署 / 分支策略
+```
+
+## 🚀 快速开始
+
+| 组件 | 命令 | 端口 |
+|---|---|---|
+| 后端 | IDEA 跑 `DesktopGirlfriendApplication`(profile=`dev`) | 8080 |
+| 桌面端 | `cd project && npm run dev` | 5173 + 5174 |
+| 后台 | `cd web-admin && npm run dev` | 5175 |
+
+**详细步骤见 [server/STARTUP-GUIDE.md](server/STARTUP-GUIDE.md)**(IDEA + VS Code 完整配置 + 常见问题排查)
+
+**分支策略见 [docs/BRANCHING.md](docs/BRANCHING.md)**(单主干开发,禁止长期并存子系统分支)
+
+## 📊 当前进度
+
+| 模块 | 状态 |
+|---|---|
+| 桌面宠物窗口 | ✅ 可用(Spine 动画 / 拖拽 / 右键菜单 / 角色切换 / 时段自动切换) |
+| 个人界面窗口 | ⚠️ 骨架(11 个面板占位,Vue 3 + pxlkit-vue 已接入) |
+| 后端 auth 模块 | ✅ 可用(匿名注册 / 升级 / 登录 / 刷新,端到端已验证) |
+| 后台管理 | ⚠️ 骨架(6 个页面占位) |
+| AI 对话 / TTS / STT | ❌ M2 阶段 |
+| 角色 Agent(14 个工具) | ❌ M3 阶段 |
+| 计费 / 会员 / 支付 | ❌ M4 阶段 |
+| 自动更新 / 代码签名 | ❌ M5 阶段 |
+
+## ⚠️ 版权说明
+
+当前内置角色素材来自《棕色尘埃2》(Neowiz / Round8),**仅供个人学习,不得再分发**。
+
+- 素材已通过 `git filter-repo` 从 git 历史中剥离,`.gitignore` 排除本地副本
+- **公开发布(M5)前必须替换为自创 / AI 生成角色**
+- 代码本身 MIT,Spine 运行时见 [NOTICE](NOTICE)
 
 ---
 
