@@ -11,6 +11,9 @@ desktop.ini
 *.swp
 *.swo
 
+# ---- git 备份目录(git filter-repo 前的历史快照,数 GB,不入仓)----
+.git.backup-*/
+
 # ---- 日志与临时 ----
 *.log
 npm-debug.log*
@@ -32,6 +35,20 @@ release/
 
 # ---- 原始素材备份(与 img/spine/roxy/ 内容重复,不入仓)----
 Live2D/
+# 版权素材(Neowiz/Round8《棕色尘埃2》仅个人学习,禁止再分发):
+# 已通过 git filter-repo 从历史中剥离;下面这些规则防止本地副本被再次提交。
+# 注意:gitignore 不支持行尾注释,每条规则单独一行写。
+img/spine/roxy*/
+img/spine/ailisi*/
+img/spine/roxy_night/
+img/spine/ailisi_night/
+project/assets/characters/roxy/
+project/assets/characters/roxy-night/
+project/assets/characters/ailisi/
+project/assets/characters/ailisi-night/
+# 版权 Spine 资源在 project/ 下也有一份(开发期使用),同样不入仓
+project/spine/roxy*/
+project/spine/ailisi*/
 
 # ============================================
 # 后端 server/(M0 新增)
@@ -50,7 +67,8 @@ server/.vscode/
 
 # ---- Spring Boot ----
 server/src/main/resources/application-local.yml
-server/src/main/resources/application-prod.yml
+# application-prod.yml 应入仓(只是配置结构,不含敏感信息)
+server/src/main/resources/application-prod-real.yml    # 实际部署填敏感 Key 的版本
 
 # ============================================
 # 后台 web-admin/(M4 新增)
