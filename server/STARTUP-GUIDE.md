@@ -318,20 +318,32 @@ JAVA_HOME="D:/worksoftspace/jdk-17" mvn clean package -DskipTests
 
 | 分支 | 用途 | 状态 |
 |---|---|---|
-| `main` | 主干(目前是 M0 骨架) | 已推送 |
-| `feature/server` | 后端开发 | 已推送,auth 模块在这 |
-| `feature/desktop-extension` | 桌面端开发 | 已推送,个人界面骨架在这 |
-| `feature/web-admin` | 后台开发 | 已推送 |
+| `main` | **唯一长期分支**,含桌面端 + 后端 + 后台全部代码 | 已推送 |
 
-**切分支**:
+**2026-10-19 起改为单主干开发(trunk-based)**:
+
+以前按子系统分了三���长期分支(`feature/server` / `feature/desktop-extension` /
+`feature/web-admin`),导致切分支时一半代码"消失",连续踩了 3 个坑
+(Live2D 残留引用、个人界面 dev server 起不来、node_modules 依赖不匹配)。
+三个分支现已全部合并进 `main` 并删除。
+
+**现在的规矩**:
 
 ```bash
 cd "E:/workspace/aiworkspace/ClaudeTools/tools/Desktop Girlfriend"
-git checkout feature/server        # 后端
-git checkout feature/desktop-extension  # 桌面端
+
+# 开新功能:从 main 切短期分支(按功能命名,不按子系统)
+git checkout main && git pull
+git checkout -b feature/chat-sse
+
+# 开发 1~3 天后合回 main
+git add -A && git commit -m "feat(chat): ..."
+git checkout main && git merge --no-ff feature/chat-sse
+git push origin main
+git branch -d feature/chat-sse
 ```
 
-> ⚠️ 后端代码在 `feature/server` 分支,桌面端在 `feature/desktop-extension`,切错分支会看不到代码。
+完整规范见 [docs/BRANCHING.md](../docs/BRANCHING.md)。
 
 ---
 
@@ -339,8 +351,10 @@ git checkout feature/desktop-extension  # 桌面端
 
 | 优先级 | 事项 | 阻塞条件 |
 |---|---|---|
-| 🔴 高 | 提交后端修复 + 建 `.env` | 无,随时可做 |
+| 🔴 高 | 建 `server/.env`(填 MySQL 密码) | 无,随时可做 |
 | 🔴 高 | 申请营业执照 | 7-15 工作日,M4 支付必需 |
 | 🟡 中 | 申请 DeepSeek / 火山 / 高德 Key | M2 必需 |
+| 🟡 中 | 桌面端接后端 auth(个人界面能注册登录) | 无 |
 | 🟡 中 | 个人界面 11 面板接真实组件 | 无 |
 | 🟢 低 | 修 AuthServiceTest(11 个用例因 Mockito 环境全 error) | 无 |
+| 🟢 低 | 接 GitHub Actions CI 门禁 | 无 |
