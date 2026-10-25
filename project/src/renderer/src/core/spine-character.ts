@@ -39,7 +39,8 @@ import {
   AnimationStateData,
   Skeleton,
   SkeletonJson,
-  SkeletonBounds,
+  RegionAttachment,
+  MeshAttachment,
   type TextureAtlas,
 } from '@esotericsoftware/spine-canvas';
 import type { ICharacter } from './i-character';
@@ -157,8 +158,8 @@ export class SpineCharacter implements ICharacter {
     state.setAnimation(0, idleAnim, true);
     state.apply(skeleton);
 
-    // 6) 求包围盒
-    const bounds = computeBounds(skeleton, state, idleAnim);
+    // 6) 求包围盒（必须在 state.apply 之后，骨骼姿态才是 idle 动画帧）
+    const bounds = computeBounds(skeleton, state);
 
     // 7) 按包围盒设置画布尺寸（含 DPR）
     const dpr = Math.min(window.devicePixelRatio || 1, MAX_DPR);
@@ -272,31 +273,75 @@ async function loadTextureAtlas(
 /**
  * 计算角色包围盒（世界坐标）。
  *
- * 用 Spine 官方提供的 `SkeletonBounds`（spine-core 导出）。
- * 采样 idle 动画，覆盖动画播放时的最大范围。
+ * ── 为什么不能直接用 `SkeletonBounds` ──────────────────────────────
+ * Spine 4.0 的 `SkeletonBounds.update()` **只收集 BoundingBoxAttachment**
+ * （碰撞盒附件，用于物理/命中检测）。本项目这 4 套角色资源没有导出任何
+ * 碰撞盒附件，于是 polygons 数组为空 → minX=+∞ / maxX=-∞ → 包围盒宽度
+ * 变成负数 → 角色被压到最小尺寸（窗口 64x64，角色完全看不见）。
+ *
+ * 4.1+ 的 `SkeletonBounds` 改成统计所有可绘制附件（region / mesh），
+ * 但本项目用的是 4.0.x runtime（与资源格式匹配），所以必须自己算。
+ *
+ * 做法：遍历所有 slot 的 attachment：
+ *  - RegionAttachment → computeWorldVertices(bone, ...) 得 4 个顶点
+ *  - MeshAttachment    → computeWorldVertices(slot, ...) 得 N 个顶点
+ * 取所有顶点的 min/max 即为角色在世界坐标里的 AABB。
  */
 function computeBounds(
   skeleton: Skeleton,
   state: AnimationState,
-  idleAnim: string,
 ): { x: number; y: number; width: number; height: number } {
-  const bounds = new SkeletonBounds();
-  // setup pose
-  bounds.update(skeleton, true);
+  let minX = Number.POSITIVE_INFINITY;
+  let minY = Number.POSITIVE_INFINITY;
+  let maxX = Number.NEGATIVE_INFINITY;
+  let maxY = Number.NEGATIVE_INFINITY;
 
-  // 用 idle 动画再采一遍，覆盖动画中的位移
-  try {
-    state.apply(skeleton);
-    bounds.update(skeleton, true);
-  } catch {
-    // 动画采样失败时退回 setup pose 的包围盒
+  // 复用缓冲，避免每帧/每次调用都分配
+  const regionVerts = new Float32Array(8);
+  const meshVerts = new Float32Array(4096);
+
+  const slots = skeleton.slots;
+  for (let i = 0; i < slots.length; i++) {
+    const slot = slots[i];
+    const attachment = slot.getAttachment();
+    if (!attachment) continue;
+
+    if (attachment instanceof RegionAttachment) {
+      attachment.computeWorldVertices(slot.bone, regionVerts, 0, 2);
+      for (let v = 0; v < 4; v++) {
+        const x = regionVerts[v * 2];
+        const y = regionVerts[v * 2 + 1];
+        if (x < minX) minX = x;
+        if (y < minY) minY = y;
+        if (x > maxX) maxX = x;
+        if (y > maxY) maxY = y;
+      }
+    } else if (attachment instanceof MeshAttachment) {
+      const count = attachment.worldVerticesLength;
+      if (count <= 0) continue;
+      if (count > meshVerts.length) continue; // 顶点数异常，放弃这个附件
+      attachment.computeWorldVertices(slot, 0, count, meshVerts, 0, 2);
+      for (let v = 0; v < count / 2; v++) {
+        const x = meshVerts[v * 2];
+        const y = meshVerts[v * 2 + 1];
+        if (x < minX) minX = x;
+        if (y < minY) minY = y;
+        if (x > maxX) maxX = x;
+        if (y > maxY) maxY = y;
+      }
+    }
   }
 
-  const width = bounds.maxX - bounds.minX;
-  const height = bounds.maxY - bounds.minY;
+  // 一个可绘制附件都没有（异常资源）→ 退化成一个 1x1 的框
+  if (!Number.isFinite(minX) || !Number.isFinite(maxX)) {
+    return { x: 0, y: 0, width: 1, height: 1 };
+  }
+
+  const width = maxX - minX;
+  const height = maxY - minY;
   return {
-    x: bounds.minX,
-    y: bounds.minY,
+    x: minX,
+    y: minY,
     width: width > 0 ? width : 1,
     height: height > 0 ? height : 1,
   };
