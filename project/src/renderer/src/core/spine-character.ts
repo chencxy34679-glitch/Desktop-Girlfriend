@@ -39,10 +39,13 @@ import {
   AnimationStateData,
   Skeleton,
   SkeletonJson,
-  RegionAttachment,
-  MeshAttachment,
   type TextureAtlas,
 } from '@esotericsoftware/spine-canvas';
+// RegionAttachment / MeshAttachment 从 spine-core **直接**导入，不要走 spine-canvas
+// 的 `export * from "@esotericsoftware/spine-core"` 重导出链 ——
+// 经由 re-export 时 Vite 的 tree-shaking 会把这两个只在 `instanceof` 右边用到的
+// 类摇掉，运行时报 "RegionAttachment is not defined"。
+import { RegionAttachment, MeshAttachment } from '@esotericsoftware/spine-core';
 import type { ICharacter } from './i-character';
 
 export interface SpineCharacterOptions {
@@ -77,6 +80,8 @@ export class SpineCharacter implements ICharacter {
   /** 包围盒左上角的反向平移量（世界坐标 → 画布坐标） */
   private readonly offsetX: number;
   private readonly offsetY: number;
+  /** 设备像素比（ctx 已按它 scale 过） */
+  private readonly dpr: number;
   private disposed = false;
 
   private constructor(params: {
@@ -87,6 +92,7 @@ export class SpineCharacter implements ICharacter {
     renderer: SkeletonRenderer;
     assetManager: AssetManager;
     bounds: { x: number; y: number; width: number; height: number };
+    dpr: number;
     id: string;
     displayName: string;
     idleAnim: string;
@@ -106,14 +112,28 @@ export class SpineCharacter implements ICharacter {
     // 反向平移把 AABB 的左上角对齐到画布原点，让整个角色落在 [0,0,w,h] 内。
     this.offsetX = -params.bounds.x;
     this.offsetY = -params.bounds.y;
+    this.dpr = params.dpr;
     this.imageSize = {
       width: Math.ceil(params.bounds.width),
       height: Math.ceil(params.bounds.height),
     };
 
+    // 容器的尺寸 = 角色的自然像素尺寸（不写 100%）。
+    //
+    // 为什么不能写 100%：外层 root 用 `transform: scale(s)` 做缩放，
+    // 而 root 的布局尺寸由窗口决定（293×569 之类）。若 canvas 写 100%，
+    // 584×1133 的画布会被压到窗口大小，再被 scale(0.5) 二次缩小 →
+    // 角色只剩左上角一小块。
+    //
+    // 正确做法：canvas 保持自然尺寸（CSS 像素），让外层 scale 一次性完成
+    // "自然尺寸 → 显示尺寸"的换算。窗口尺寸则由 imageSize * scale 决定。
     const el = document.createElement('div');
-    el.style.cssText = 'position:relative;width:100%;height:100%;pointer-events:none;';
-    this.canvas.style.cssText = 'display:block;width:100%;height:100%;';
+    el.style.cssText = 'position:relative;pointer-events:none;';
+    el.style.width = `${this.imageSize.width}px`;
+    el.style.height = `${this.imageSize.height}px`;
+    this.canvas.style.display = 'block';
+    this.canvas.style.width = `${this.imageSize.width}px`;
+    this.canvas.style.height = `${this.imageSize.height}px`;
     el.appendChild(this.canvas);
     this.container = el;
   }
@@ -188,6 +208,7 @@ export class SpineCharacter implements ICharacter {
       renderer,
       assetManager,
       bounds,
+      dpr,
       id: opts.id,
       displayName: opts.displayName,
       idleAnim,
@@ -209,8 +230,12 @@ export class SpineCharacter implements ICharacter {
 
   private draw(): void {
     const { ctx, canvas, offsetX, offsetY } = this;
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    // 画布已按 DPR 缩放，这里再平移到 AABB 左上角
+    // ★ 用 CSS 尺寸清屏，不用 canvas.width/height ★
+    //   ctx 上已经 ctx.scale(dpr, dpr)，坐标系单位是 CSS 像素；
+    //   若传物理像素尺寸（= CSS × dpr），矩形会超出画布，
+    //   多余部分被裁掉 → 上一帧残留，出现拖影。
+    ctx.clearRect(0, 0, canvas.width / this.dpr, canvas.height / this.dpr);
+    // 平移到 AABB 左上角，让角色落在 [0,0,w,h] 内
     ctx.save();
     ctx.translate(offsetX, offsetY);
     this.renderer.draw(this.skeleton);

@@ -62,7 +62,11 @@ async function boot(): Promise<void> {
   // 与原版 V1.1 架构一致：舞台就是一个普通 div，角色往里塞 <canvas>。
   const stage = document.getElementById(STAGE_ID) as HTMLElement;
   const root = document.createElement('div');
-  root.style.cssText = 'position:absolute;inset:0;transform-origin:top left;';
+  // root 是**角色的自然尺寸**容器（不是铺满窗口）：
+  //   角色 canvas 按自然像素尺寸（如 584×1133）布局，
+  //   再由 CharacterManager.applyScale 用 `transform: scale(s)` 缩到显示尺寸。
+  // 若 root 铺满窗口（inset:0），canvas 会被窗口尺寸二次约束，角色只剩一角。
+  root.style.cssText = 'position:absolute;left:0;top:0;transform-origin:top left;';
   stage.appendChild(root);
   console.log('[renderer] stage ready');
 

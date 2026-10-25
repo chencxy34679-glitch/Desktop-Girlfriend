@@ -94,6 +94,10 @@ export class CharacterManager {
     if (this.opts.isDragging?.()) return;
     const s = Math.min(SCALE_MAX, Math.max(SCALE_MIN, next));
     this.currentScale = s;
+    // root 的布局尺寸 = 角色自然尺寸；显示尺寸由 scale 变换得到。
+    // 不设的话 root 会塌成 0×0，transform 也无从作用。
+    this.opts.root.style.width = `${this.current.imageSize.width}px`;
+    this.opts.root.style.height = `${this.current.imageSize.height}px`;
     this.opts.root.style.transform = `scale(${s})`;
     this.opts.root.style.transformOrigin = 'top left';
     this.opts.onScaleChanged?.(s);
