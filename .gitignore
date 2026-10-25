@@ -116,3 +116,6 @@ docs/site/
 .tmp/
 # Spine 3.x→4.1 转换前的原始文件备份
 project/.spine-backup/
+
+# 拖拽探针的 esbuild 产物(由 `npm run probe:build` 生成)
+project/probes/.build/

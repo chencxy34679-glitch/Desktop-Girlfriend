@@ -25,6 +25,21 @@ type MoveCallback = (dx: number, dy: number) => void;
 type TapCallback = () => void;
 type DragStateChangedCallback = (dragging: boolean) => void;
 
+/** 拖拽实时统计（调试仪表盘消费） */
+export interface DragStats {
+  /** 当前是否在拖拽 */
+  dragging: boolean;
+  /** 抓取瞬间，光标相对窗口原点的偏移 */
+  grabOffsetX: number;
+  grabOffsetY: number;
+  /** 当前光标相对窗口原点的偏移 */
+  cursorOffsetX: number;
+  cursorOffsetY: number;
+  /** 累计位移 */
+  accumDx: number;
+  accumDy: number;
+}
+
 const DRAG_THRESHOLD_PX = 1;
 const HOLD_TIME_THRESHOLD_MS = 180;
 
@@ -44,6 +59,16 @@ export interface DragController {
   readonly isDragging: boolean;
   /** 当前按下的时间戳（ms），未按下时为 0 */
   pressStart: number;
+  /**
+   * 拖拽实时统计（供调试仪表盘使用）。
+   *
+   * 关键量是"光标相对窗口原点的偏移"：
+   *  - 抓取瞬间记下 grabOffsetX/Y；
+   *  - 拖拽过程中 cursorOffsetX/Y 应该**一直等于** grabOffsetX/Y
+   *    （窗口完全跟手时，角色在光标下的相对位置不会变）。
+   *  - 两者出现差值，就说明窗口没完全跟手（滞后 / 量化 / 被弹回）。
+   */
+  readonly stats: DragStats;
   dispose: () => void;
 }
 
@@ -63,6 +88,23 @@ export function setupDrag(
   let captured = false;
   let didDrag = false;
 
+  // 调试仪表盘用的实时统计（生产逻辑不依赖它）
+  const stats: DragStats = {
+    dragging: false,
+    grabOffsetX: 0,
+    grabOffsetY: 0,
+    cursorOffsetX: 0,
+    cursorOffsetY: 0,
+    accumDx: 0,
+    accumDy: 0,
+  };
+
+  /** 光标相对窗口左上角的偏移（DIP） */
+  const cursorOffset = (e: PointerEvent): { x: number; y: number } => ({
+    x: Math.round(e.screenX - window.screenX),
+    y: Math.round(e.screenY - window.screenY),
+  });
+
   // rAF 节流的位移累积
   let pendingDx = 0;
   let pendingDy = 0;
@@ -75,6 +117,8 @@ export function setupDrag(
     const dy = pendingDy;
     pendingDx = 0;
     pendingDy = 0;
+    stats.accumDx += dx;
+    stats.accumDy += dy;
     onMove(dx, dy);
     void window.petApi.moveBy({ dx, dy });
   };
@@ -82,6 +126,7 @@ export function setupDrag(
   const setDragging = (next: boolean): void => {
     if (dragging === next) return;
     dragging = next;
+    stats.dragging = next;
     if (next) {
       document.body.classList.add('dragging');
     } else {
@@ -100,6 +145,14 @@ export function setupDrag(
     pressStart = performance.now();
     pendingDx = 0;
     pendingDy = 0;
+    // 记录抓取瞬间光标相对窗口原点的偏移 —— 拖拽过程中它应当保持不变
+    const off = cursorOffset(e);
+    stats.grabOffsetX = off.x;
+    stats.grabOffsetY = off.y;
+    stats.cursorOffsetX = off.x;
+    stats.cursorOffsetY = off.y;
+    stats.accumDx = 0;
+    stats.accumDy = 0;
     try {
       canvas.setPointerCapture(e.pointerId);
       captured = true;
@@ -110,6 +163,9 @@ export function setupDrag(
 
   const onPointerMove = (e: PointerEvent): void => {
     if (!armed) return;
+    const off = cursorOffset(e);
+    stats.cursorOffsetX = off.x;
+    stats.cursorOffsetY = off.y;
     const totalDx = e.screenX - startX;
     const totalDy = e.screenY - startY;
     if (!dragging && Math.hypot(totalDx, totalDy) > DRAG_THRESHOLD_PX) {
@@ -198,6 +254,7 @@ export function setupDrag(
       return dragging;
     },
     pressStart: 0,
+    stats,
     dispose: () => {
       if (rafId !== 0) {
         cancelAnimationFrame(rafId);

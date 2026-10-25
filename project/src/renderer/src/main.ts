@@ -20,6 +20,7 @@ import { ChatAdapter } from './core/chat-adapter';
 import { TtsAdapter } from './core/tts-adapter';
 import { SpeechBubble } from './core/speech-bubble';
 import { setupDrag, type DragController } from './drag';
+import { createDebugHud, isDevRenderer } from './core/debug-hud';
 import {
   setupContextMenu,
   registerMenuItem,
@@ -132,6 +133,16 @@ async function boot(): Promise<void> {
     },
   });
   const ctxMenu = setupContextMenu(canvas);
+
+  // ---- 开发期调试仪表盘（F9 开关）----
+  //
+  // 用途：把"拖拽时窗口是不是变大了 / 有没有跟手"变成**可读数字**，
+  // 不用靠肉眼猜。外框/内容尺寸分开显示，一眼能分清是"真的变大"
+  // 还是"位置漂移"；光标相对窗口原点的偏移（抓取值 vs 当前值）能看出跟手程度。
+  if (isDevRenderer()) {
+    const hud = createDebugHud();
+    hud.setStatsSource(() => drag.stats);
+  }
 
   // 角色切换菜单（submenu，会动态拉 listCharacters）
   // 注册占位；真正点击时再 fetch 后添加为 children。

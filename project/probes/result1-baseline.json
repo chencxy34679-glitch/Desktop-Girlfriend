@@ -1,0 +1,1087 @@
+{
+  "scenarios": {
+    "A": {
+      "说明": "长按微动（累计 8px < 12px 阈值），endDrag 会走 alignToDefault 弹回",
+      "before": {
+        "tag": "A:before",
+        "size": [
+          294,
+          570
+        ],
+        "contentSize": [
+          294,
+          570
+        ],
+        "bounds": {
+          "x": 706,
+          "y": 224,
+          "width": 294,
+          "height": 570
+        },
+        "contentBounds": {
+          "x": 706,
+          "y": 224,
+          "width": 294,
+          "height": 570
+        },
+        "position": [
+          706,
+          224
+        ]
+      },
+      "afterBegin": {
+        "tag": "A:afterBeginDrag",
+        "size": [
+          294,
+          570
+        ],
+        "contentSize": [
+          294,
+          570
+        ],
+        "bounds": {
+          "x": 706,
+          "y": 224,
+          "width": 294,
+          "height": 570
+        },
+        "contentBounds": {
+          "x": 706,
+          "y": 224,
+          "width": 294,
+          "height": 570
+        },
+        "position": [
+          706,
+          224
+        ]
+      },
+      "beforeEnd": {
+        "tag": "A:beforeEndDrag",
+        "size": [
+          294,
+          570
+        ],
+        "contentSize": [
+          294,
+          570
+        ],
+        "bounds": {
+          "x": 706,
+          "y": 224,
+          "width": 294,
+          "height": 570
+        },
+        "contentBounds": {
+          "x": 706,
+          "y": 224,
+          "width": 294,
+          "height": 570
+        },
+        "position": [
+          706,
+          224
+        ]
+      },
+      "afterEnd": {
+        "tag": "A:afterEndDrag",
+        "size": [
+          295,
+          571
+        ],
+        "contentSize": [
+          294,
+          570
+        ],
+        "bounds": {
+          "x": 1412,
+          "y": 448,
+          "width": 295,
+          "height": 571
+        },
+        "contentBounds": {
+          "x": 1412,
+          "y": 448,
+          "width": 294,
+          "height": 570
+        },
+        "position": [
+          1412,
+          448
+        ]
+      },
+      "endDrag期间的setBounds调用数": 1,
+      "endDrag期间的setBounds参数": [
+        {
+          "frame": -1,
+          "bounds": {
+            "x": 1413,
+            "y": 449,
+            "width": 294,
+            "height": 570
+          },
+          "animate": false
+        }
+      ],
+      "弹回位移": {
+        "x": 706,
+        "y": 224
+      }
+    },
+    "B": {
+      "说明": "正常拖拽 200 帧（左右抖动），逐帧核对尺寸与位置",
+      "before": {
+        "tag": "B:before",
+        "size": [
+          295,
+          571
+        ],
+        "contentSize": [
+          294,
+          570
+        ],
+        "bounds": {
+          "x": 1412,
+          "y": 448,
+          "width": 295,
+          "height": 571
+        },
+        "contentBounds": {
+          "x": 1412,
+          "y": 448,
+          "width": 294,
+          "height": 570
+        },
+        "position": [
+          1412,
+          448
+        ]
+      },
+      "afterBegin": {
+        "tag": "B:afterBeginDrag",
+        "size": [
+          295,
+          571
+        ],
+        "contentSize": [
+          294,
+          570
+        ],
+        "bounds": {
+          "x": 1412,
+          "y": 448,
+          "width": 295,
+          "height": 571
+        },
+        "contentBounds": {
+          "x": 1412,
+          "y": 448,
+          "width": 294,
+          "height": 570
+        },
+        "position": [
+          1412,
+          448
+        ]
+      },
+      "final": {
+        "tag": "B:final",
+        "size": [
+          294,
+          570
+        ],
+        "contentSize": [
+          294,
+          570
+        ],
+        "bounds": {
+          "x": 1412,
+          "y": 448,
+          "width": 294,
+          "height": 570
+        },
+        "contentBounds": {
+          "x": 1412,
+          "y": 448,
+          "width": 294,
+          "height": 570
+        },
+        "position": [
+          1412,
+          448
+        ]
+      },
+      "初始内容原点": {
+        "x": 1412,
+        "y": 448,
+        "width": 294,
+        "height": 570
+      },
+      "初始外框原点": {
+        "x": 1412,
+        "y": 448
+      },
+      "累计位移": {
+        "x": 0,
+        "y": 0
+      },
+      "期望内容原点": {
+        "x": 1412,
+        "y": 448
+      },
+      "实际内容原点": {
+        "x": 1412,
+        "y": 448,
+        "width": 294,
+        "height": 570
+      },
+      "内容原点偏差": {
+        "x": 0,
+        "y": 0
+      },
+      "期望外框原点": {
+        "x": 1412,
+        "y": 448
+      },
+      "实际外框原点": {
+        "x": 1412,
+        "y": 448,
+        "width": 294,
+        "height": 570
+      },
+      "外框原点偏差": {
+        "x": 0,
+        "y": 0
+      },
+      "尺寸漂移": {
+        "内容尺寸": {
+          "初始": [
+            294,
+            570
+          ],
+          "最终": [
+            294,
+            570
+          ],
+          "变化": [
+            0,
+            0
+          ]
+        },
+        "外框尺寸": {
+          "初始": [
+            295,
+            571
+          ],
+          "最终": [
+            294,
+            570
+          ],
+          "变化": [
+            -1,
+            -1
+          ]
+        },
+        "尺寸发生变化的帧数": 199,
+        "尺寸发生变化的帧": [
+          {
+            "i": 1,
+            "cumDx": 0,
+            "cumDy": 2,
+            "size": [
+              294,
+              570
+            ],
+            "contentSize": [
+              294,
+              570
+            ],
+            "contentBounds": {
+              "x": 1412,
+              "y": 450,
+              "width": 294,
+              "height": 570
+            },
+            "bounds": {
+              "x": 1412,
+              "y": 450,
+              "width": 294,
+              "height": 570
+            }
+          },
+          {
+            "i": 2,
+            "cumDx": 3,
+            "cumDy": 1,
+            "size": [
+              295,
+              571
+            ],
+            "contentSize": [
+              294,
+              570
+            ],
+            "contentBounds": {
+              "x": 1414,
+              "y": 448,
+              "width": 294,
+              "height": 570
+            },
+            "bounds": {
+              "x": 1414,
+              "y": 448,
+              "width": 295,
+              "height": 571
+            }
+          },
+          {
+            "i": 3,
+            "cumDx": 0,
+            "cumDy": 0,
+            "size": [
+              294,
+              570
+            ],
+            "contentSize": [
+              294,
+              570
+            ],
+            "contentBounds": {
+              "x": 1412,
+              "y": 448,
+              "width": 294,
+              "height": 570
+            },
+            "bounds": {
+              "x": 1412,
+              "y": 448,
+              "width": 294,
+              "height": 570
+            }
+          },
+          {
+            "i": 4,
+            "cumDx": 3,
+            "cumDy": 1,
+            "size": [
+              295,
+              571
+            ],
+            "contentSize": [
+              294,
+              570
+            ],
+            "contentBounds": {
+              "x": 1414,
+              "y": 448,
+              "width": 294,
+              "height": 570
+            },
+            "bounds": {
+              "x": 1414,
+              "y": 448,
+              "width": 295,
+              "height": 571
+            }
+          },
+          {
+            "i": 5,
+            "cumDx": 0,
+            "cumDy": 2,
+            "size": [
+              294,
+              570
+            ],
+            "contentSize": [
+              294,
+              570
+            ],
+            "contentBounds": {
+              "x": 1412,
+              "y": 450,
+              "width": 294,
+              "height": 570
+            },
+            "bounds": {
+              "x": 1412,
+              "y": 450,
+              "width": 294,
+              "height": 570
+            }
+          }
+        ]
+      },
+      "位置偏离期望的帧数": 100,
+      "位置偏离期望的帧样例": [
+        {
+          "i": 0,
+          "cumDx": 3,
+          "cumDy": 1,
+          "size": [
+            295,
+            571
+          ],
+          "contentSize": [
+            294,
+            570
+          ],
+          "contentBounds": {
+            "x": 1414,
+            "y": 448,
+            "width": 294,
+            "height": 570
+          },
+          "bounds": {
+            "x": 1414,
+            "y": 448,
+            "width": 295,
+            "height": 571
+          }
+        },
+        {
+          "i": 2,
+          "cumDx": 3,
+          "cumDy": 1,
+          "size": [
+            295,
+            571
+          ],
+          "contentSize": [
+            294,
+            570
+          ],
+          "contentBounds": {
+            "x": 1414,
+            "y": 448,
+            "width": 294,
+            "height": 570
+          },
+          "bounds": {
+            "x": 1414,
+            "y": 448,
+            "width": 295,
+            "height": 571
+          }
+        },
+        {
+          "i": 4,
+          "cumDx": 3,
+          "cumDy": 1,
+          "size": [
+            295,
+            571
+          ],
+          "contentSize": [
+            294,
+            570
+          ],
+          "contentBounds": {
+            "x": 1414,
+            "y": 448,
+            "width": 294,
+            "height": 570
+          },
+          "bounds": {
+            "x": 1414,
+            "y": 448,
+            "width": 295,
+            "height": 571
+          }
+        },
+        {
+          "i": 6,
+          "cumDx": 3,
+          "cumDy": 1,
+          "size": [
+            295,
+            571
+          ],
+          "contentSize": [
+            294,
+            570
+          ],
+          "contentBounds": {
+            "x": 1414,
+            "y": 448,
+            "width": 294,
+            "height": 570
+          },
+          "bounds": {
+            "x": 1414,
+            "y": 448,
+            "width": 295,
+            "height": 571
+          }
+        },
+        {
+          "i": 8,
+          "cumDx": 3,
+          "cumDy": 1,
+          "size": [
+            295,
+            571
+          ],
+          "contentSize": [
+            294,
+            570
+          ],
+          "contentBounds": {
+            "x": 1414,
+            "y": 448,
+            "width": 294,
+            "height": 570
+          },
+          "bounds": {
+            "x": 1414,
+            "y": 448,
+            "width": 295,
+            "height": 571
+          }
+        }
+      ],
+      "setBounds总调用数": 209,
+      "每帧平均setBounds次数": 1.03
+    },
+    "C": {
+      "说明": "setBounds({width:400,height:300}) 之后，看 getSize 与 getContentSize 各自变成多少 —— 判定 width/height 到底是外框还是内容语义",
+      "before": {
+        "tag": "C:before",
+        "size": [
+          294,
+          570
+        ],
+        "contentSize": [
+          294,
+          570
+        ],
+        "bounds": {
+          "x": 1412,
+          "y": 448,
+          "width": 294,
+          "height": 570
+        },
+        "contentBounds": {
+          "x": 1412,
+          "y": 448,
+          "width": 294,
+          "height": 570
+        },
+        "position": [
+          1412,
+          448
+        ]
+      },
+      "after": {
+        "tag": "C:afterSetBounds400x300",
+        "size": [
+          294,
+          570
+        ],
+        "contentSize": [
+          294,
+          570
+        ],
+        "bounds": {
+          "x": 1412,
+          "y": 448,
+          "width": 294,
+          "height": 570
+        },
+        "contentBounds": {
+          "x": 1412,
+          "y": 448,
+          "width": 294,
+          "height": 570
+        },
+        "position": [
+          1412,
+          448
+        ]
+      },
+      "结论": {
+        "外框尺寸变成": [
+          294,
+          570
+        ],
+        "内容尺寸变成": [
+          294,
+          570
+        ],
+        "判定": "setBounds 的 width/height 是【内容】语义",
+        "内容边框厚度": {
+          "左右": 0,
+          "上下": 0
+        }
+      }
+    },
+    "D": {
+      "说明": "连续 30 次 setPosition，观察窗口尺寸是否每帧 +1px（复现旧 bug）",
+      "before": {
+        "tag": "D:before",
+        "size": [
+          294,
+          570
+        ],
+        "contentSize": [
+          294,
+          570
+        ],
+        "bounds": {
+          "x": 1412,
+          "y": 448,
+          "width": 294,
+          "height": 570
+        },
+        "contentBounds": {
+          "x": 1412,
+          "y": 448,
+          "width": 294,
+          "height": 570
+        },
+        "position": [
+          1412,
+          448
+        ]
+      },
+      "after": {
+        "tag": "D:after30xSetPosition",
+        "size": [
+          295,
+          570
+        ],
+        "contentSize": [
+          294,
+          570
+        ],
+        "bounds": {
+          "x": 1440,
+          "y": 448,
+          "width": 295,
+          "height": 570
+        },
+        "contentBounds": {
+          "x": 1440,
+          "y": 448,
+          "width": 294,
+          "height": 570
+        },
+        "position": [
+          1440,
+          448
+        ]
+      },
+      "尺寸变化": {
+        "外框": [
+          1,
+          0
+        ],
+        "内容": [
+          0,
+          0
+        ]
+      }
+    }
+  },
+  "setBoundsCalls": [
+    {
+      "frame": -1,
+      "bounds": {
+        "x": 708,
+        "y": 224,
+        "width": 294,
+        "height": 570
+      },
+      "animate": false
+    },
+    {
+      "frame": -1,
+      "bounds": {
+        "x": 706,
+        "y": 224,
+        "width": 294,
+        "height": 570
+      },
+      "animate": false
+    },
+    {
+      "frame": -1,
+      "bounds": {
+        "x": 708,
+        "y": 224,
+        "width": 294,
+        "height": 570
+      },
+      "animate": false
+    },
+    {
+      "frame": -1,
+      "bounds": {
+        "x": 706,
+        "y": 224,
+        "width": 294,
+        "height": 570
+      },
+      "animate": false
+    },
+    {
+      "frame": -1,
+      "bounds": {
+        "x": 708,
+        "y": 224,
+        "width": 294,
+        "height": 570
+      },
+      "animate": false
+    },
+    {
+      "frame": -1,
+      "bounds": {
+        "x": 706,
+        "y": 224,
+        "width": 294,
+        "height": 570
+      },
+      "animate": false
+    },
+    {
+      "frame": -1,
+      "bounds": {
+        "x": 708,
+        "y": 224,
+        "width": 294,
+        "height": 570
+      },
+      "animate": false
+    },
+    {
+      "frame": -1,
+      "bounds": {
+        "x": 706,
+        "y": 224,
+        "width": 294,
+        "height": 570
+      },
+      "animate": false
+    },
+    {
+      "frame": -1,
+      "bounds": {
+        "x": 1413,
+        "y": 449,
+        "width": 294,
+        "height": 570
+      },
+      "animate": false
+    },
+    {
+      "frame": -1,
+      "bounds": {
+        "x": 1415,
+        "y": 449,
+        "width": 294,
+        "height": 570
+      },
+      "animate": false
+    },
+    {
+      "frame": -1,
+      "bounds": {
+        "x": 1412,
+        "y": 450,
+        "width": 294,
+        "height": 570
+      },
+      "animate": false
+    },
+    {
+      "frame": -1,
+      "bounds": {
+        "x": 1415,
+        "y": 449,
+        "width": 294,
+        "height": 570
+      },
+      "animate": false
+    },
+    {
+      "frame": -1,
+      "bounds": {
+        "x": 1412,
+        "y": 448,
+        "width": 294,
+        "height": 570
+      },
+      "animate": false
+    },
+    {
+      "frame": -1,
+      "bounds": {
+        "x": 1415,
+        "y": 449,
+        "width": 294,
+        "height": 570
+      },
+      "animate": false
+    },
+    {
+      "frame": -1,
+      "bounds": {
+        "x": 1412,
+        "y": 450,
+        "width": 294,
+        "height": 570
+      },
+      "animate": false
+    },
+    {
+      "frame": -1,
+      "bounds": {
+        "x": 1415,
+        "y": 449,
+        "width": 294,
+        "height": 570
+      },
+      "animate": false
+    },
+    {
+      "frame": -1,
+      "bounds": {
+        "x": 1412,
+        "y": 448,
+        "width": 294,
+        "height": 570
+      },
+      "animate": false
+    },
+    {
+      "frame": -1,
+      "bounds": {
+        "x": 1415,
+        "y": 449,
+        "width": 294,
+        "height": 570
+      },
+      "animate": false
+    },
+    {
+      "frame": -1,
+      "bounds": {
+        "x": 1412,
+        "y": 450,
+        "width": 294,
+        "height": 570
+      },
+      "animate": false
+    },
+    {
+      "frame": -1,
+      "bounds": {
+        "x": 1415,
+        "y": 449,
+        "width": 294,
+        "height": 570
+      },
+      "animate": false
+    },
+    {
+      "frame": -1,
+      "bounds": {
+        "x": 1412,
+        "y": 448,
+        "width": 294,
+        "height": 570
+      },
+      "animate": false
+    },
+    {
+      "frame": -1,
+      "bounds": {
+        "x": 1415,
+        "y": 449,
+        "width": 294,
+        "height": 570
+      },
+      "animate": false
+    },
+    {
+      "frame": -1,
+      "bounds": {
+        "x": 1412,
+        "y": 450,
+        "width": 294,
+        "height": 570
+      },
+      "animate": false
+    },
+    {
+      "frame": -1,
+      "bounds": {
+        "x": 1415,
+        "y": 449,
+        "width": 294,
+        "height": 570
+      },
+      "animate": false
+    },
+    {
+      "frame": -1,
+      "bounds": {
+        "x": 1412,
+        "y": 448,
+        "width": 294,
+        "height": 570
+      },
+      "animate": false
+    },
+    {
+      "frame": -1,
+      "bounds": {
+        "x": 1415,
+        "y": 449,
+        "width": 294,
+        "height": 570
+      },
+      "animate": false
+    },
+    {
+      "frame": -1,
+      "bounds": {
+        "x": 1412,
+        "y": 450,
+        "width": 294,
+        "height": 570
+      },
+      "animate": false
+    },
+    {
+      "frame": -1,
+      "bounds": {
+        "x": 1415,
+        "y": 449,
+        "width": 294,
+        "height": 570
+      },
+      "animate": false
+    },
+    {
+      "frame": -1,
+      "bounds": {
+        "x": 1412,
+        "y": 448,
+        "width": 294,
+        "height": 570
+      },
+      "animate": false
+    },
+    {
+      "frame": -1,
+      "bounds": {
+        "x": 1415,
+        "y": 449,
+        "width": 294,
+        "height": 570
+      },
+      "animate": false
+    },
+    {
+      "frame": -1,
+      "bounds": {
+        "x": 1412,
+        "y": 450,
+        "width": 294,
+        "height": 570
+      },
+      "animate": false
+    },
+    {
+      "frame": -1,
+      "bounds": {
+        "x": 1415,
+        "y": 449,
+        "width": 294,
+        "height": 570
+      },
+      "animate": false
+    },
+    {
+      "frame": -1,
+      "bounds": {
+        "x": 1412,
+        "y": 448,
+        "width": 294,
+        "height": 570
+      },
+      "animate": false
+    },
+    {
+      "frame": -1,
+      "bounds": {
+        "x": 1415,
+        "y": 449,
+        "width": 294,
+        "height": 570
+      },
+      "animate": false
+    },
+    {
+      "frame": -1,
+      "bounds": {
+        "x": 1412,
+        "y": 450,
+        "width": 294,
+        "height": 570
+      },
+      "animate": false
+    },
+    {
+      "frame": -1,
+      "bounds": {
+        "x": 1415,
+        "y": 449,
+        "width": 294,
+        "height": 570
+      },
+      "animate": false
+    },
+    {
+      "frame": -1,
+      "bounds": {
+        "x": 1412,
+        "y": 448,
+        "width": 294,
+        "height": 570
+      },
+      "animate": false
+    },
+    {
+      "frame": -1,
+      "bounds": {
+        "x": 1415,
+        "y": 449,
+        "width": 294,
+        "height": 570
+      },
+      "animate": false
+    },
+    {
+      "frame": -1,
+      "bounds": {
+        "x": 1412,
+        "y": 450,
+        "width": 294,
+        "height": 570
+      },
+      "animate": false
+    },
+    {
+      "frame": -1,
+      "bounds": {
+        "x": 1415,
+        "y": 449,
+        "width": 294,
+        "height": 570
+      },
+      "animate": false
+    }
+  ]
+}

@@ -43,16 +43,21 @@ export class WindowState {
    *
    * ★ 为什么存"内容尺寸"而不是 getSize() ★
    *
-   * Electron 在 Windows 上的尺寸语义（实测确认，Electron 33 + Win11）：
-   *  - `getSize()`       → **窗口**尺寸（含 1px 不可见边框）
-   *  - `getContentSize()`→ **内容**尺寸（不含边框）
-   *  - `setBounds(w,h)`  → w/h 是**内容**语义
-   *  - `setContentSize()`→ 内容语义
-   *  - `setPosition()`   → ★ 每调用一次，窗口就会长 1px ★
+   * Electron 在 Windows 上的尺寸语义（本地探针实测，Electron 33.4.11 + Win11
+   * 150% DPI，240 帧拖拽）：
+   *  - `getSize()`       → **窗口**（外框）尺寸，含 1px 不可见边框
+   *  - `getContentSize()`→ **内容**（客户区）尺寸
+   *  - `getContentBounds()` → 内容区原点 + 尺寸
+   *  - `setContentBounds()` → **移动并缩放客户区**，与 getContentBounds 配对
+   *  - `setBounds(w,h)`  → 窗口语义（官方文档：Resizes and moves the window）
+   *  - `setPosition()`   → ★ 每调用一次，外框就长 1px ★
    *
    * 混用 getSize() 与 setBounds 会造成 1px 误差；而反复调 setPosition 更糟 ——
-   * 它会逐帧累积，实测 60 帧能把窗口撑宽 60px，这就是"长按拖拽时窗口不断变大"
+   * 它会逐帧累积，实测 60 帧能把外框撑宽 60px，这就是"长按拖拽时窗口不断变大"
    * 的根因。详见 moveByWhileDragging 的注释。
+   *
+   * 本类统一采用**内容语义**：冻结 getContentSize()、移动用 setContentBounds()，
+   * 读写都用 getContentBounds()，保证与角色实际绘制区域（客户区）严格同源。
    */
   private frozenSize: [number, number] | null = null;
   /**
@@ -61,10 +66,30 @@ export class WindowState {
    */
   private internalResize = false;
   /**
-   * 拖拽期间自己维护的窗口位置（累加值，**不回读** getPosition）。
+   * 拖拽**开始时**窗口是否处在默认位置（右下角）。
+   *
+   * ★ 这个状态必须单独记，不能只看"累计位移是否 < 阈值" ★
+   *
+   * 旧逻辑：endDrag 时只要累计位移 < 12px 就把窗口弹回右下角。
+   * 但用户如果**先把宠物拖到别处**（此时 atDefaultPosition=false），
+   * 之后再来一次"长按 + 轻晃几像素"，累计位移必然 < 12px，
+   * 于是窗口会被强行瞬移回右下角 —— 探针实测这是 **706px 的跳变**，
+   * 正是用户说的"长按拖拽晃动能明显感觉到偏移"。
+   *
+   * 正确语义：只有**本来就是待在右下角**的窗口，长按微动才应该弹回原地；
+   * 用户自己挪走过的窗口，任何时候都不该被系统拽回去。
+   */
+  private wasAtDefaultAtDragStart = true;
+  /**
+   * 拖拽期间自己维护的窗口位置（累加值，**不回读**）。
    *
    * 为什么要自己记：setPosition 每调一次就长 1px，所以拖拽全程不碰
-   * setPosition，改用 setBounds（带固定的内容宽高）来移动。
+   * setPosition，改用 setContentBounds（内容语义）来移动。
+   *
+   * 为什么不"读回实际落点"当基准：150% DPI 下 Chromium 的 DIP↔物理像素换算
+   * 用整数截断，窗口位置只能落在偶数 DIP（探针实测：请求 303 实际落在 302）。
+   * 若每帧读回实际落点再叠加新位移，这个 1px 的量化误差会被**逐帧累积**；
+   * 保留"理想位置"累加值、让系统每次重新量化，总误差才能稳定在 1px 以内。
    */
   private dragPosX = 0;
   private dragPosY = 0;
@@ -83,25 +108,18 @@ export class WindowState {
   alignToDefault(win: BrowserWindow): void {
     if (win.isDestroyed()) return;
     const wa = this.getWorkArea(win);
-    // 用内容尺寸算右下角位置（与 tryResize / frozenSize 同源）。
-    // 注意：setPosition 在 Windows 上会让窗口长 1px，所以这里用
-    // setBounds 传固定内容宽高，移动的同时把尺寸钉住。
+    // 统一用**内容语义**：角色画在客户区里，定位也按客户区算，
+    // 右下角对齐时让"内容右边缘 / 下边缘"贴住工作区边缘。
     const [w, h] = win.getContentSize();
     const frozen: [number, number] = this.frozenSize ?? [w, h];
+    const x = Math.round(wa.x + wa.width - frozen[0]);
+    const y = Math.round(wa.y + wa.height - frozen[1]);
     this.internalResize = true;
-    win.setBounds(
-      {
-        x: Math.round(wa.x + wa.width - w),
-        y: Math.round(wa.y + wa.height - h),
-        width: frozen[0],
-        height: frozen[1],
-      },
-      false,
-    );
+    win.setContentBounds({ x, y, width: frozen[0], height: frozen[1] }, false);
     this.internalResize = false;
     // 同步内部维护的位置，供后续拖拽累加
-    this.dragPosX = Math.round(wa.x + wa.width - w);
-    this.dragPosY = Math.round(wa.y + wa.height - h);
+    this.dragPosX = x;
+    this.dragPosY = y;
   }
 
   /**
@@ -151,13 +169,12 @@ export class WindowState {
     if (!this.frozenSize) return;
     const cur = win.getContentSize();
     if (cur[0] === this.frozenSize[0] && cur[1] === this.frozenSize[1]) return;
-    // console.log('[main][FREEZE] setBounds', cur[0], 'x', cur[1], '→', this.frozenSize[0], 'x', this.frozenSize[1]);
+    // console.log('[main][FREEZE] setContentBounds', cur[0], 'x', cur[1], '→', this.frozenSize[0], 'x', this.frozenSize[1]);
     this.internalResize = true;
-    win.setBounds(
+    win.setContentBounds(
       {
         x: this.dragPosX,
         y: this.dragPosY,
-        // setBounds 的 w/h 是内容语义，与 frozenSize 同源，直接传
         width: this.frozenSize[0],
         height: this.frozenSize[1],
       },
@@ -178,19 +195,27 @@ export class WindowState {
     this.isDragging = true;
     this.dragAccumDx = 0;
     this.dragAccumDy = 0;
+    // ★ 记住"拖拽开始时窗口在不在默认位置"，endDrag 的弹回判定要用 ★
+    this.wasAtDefaultAtDragStart = this.atDefaultPosition;
     if (win && !win.isDestroyed()) {
-      // 冻结**内容尺寸**（与 setBounds 的参数同源）
+      // 冻结**内容尺寸**（与 setContentBounds 的参数同源）
       const content = win.getContentSize();
       this.frozenSize = [content[0], content[1]];
 
       // 位置从这里开始自己维护，不再每帧回读 getPosition()
-      const pos = win.getPosition();
-      this.dragPosX = pos[0];
-      this.dragPosY = pos[1];
+      // 用内容原点（客户区左上角）而不是窗口原点：角色画在客户区里，
+      // 光标抓的也是客户区，保持同源才不会产生 1px 的相对错位。
+      const cb = win.getContentBounds();
+      this.dragPosX = cb.x;
+      this.dragPosY = cb.y;
 
-      // 用 setMinimumSize + setMaximumSize 把窗口锁死在 frozenSize
-      win.setMinimumSize(this.frozenSize[0], this.frozenSize[1]);
-      win.setMaximumSize(this.frozenSize[0], this.frozenSize[1]);
+      // 用 setMinimumSize + setMaximumSize 把**外框**锁死。
+      // ★ 注意：这两个 API 是"窗口"尺寸语义，不能用内容尺寸去设，
+      //   否则锁的值比实际外框小 1px，Windows 每帧都要重新夹一次尺寸，
+      //   外框就会在 294↔295 之间来回翻（探针实测 200 帧里 199 帧尺寸都在变）。
+      const outer = win.getSize();
+      win.setMinimumSize(outer[0], outer[1]);
+      win.setMaximumSize(outer[0], outer[1]);
     }
   }
 
@@ -199,19 +224,24 @@ export class WindowState {
    *
    * ★ 关键实现要点（修"长按拖拽时窗口不断变大"）★
    *
-   * 现象：每帧调 `win.setPosition()`，窗口宽度每帧长 1px，60 帧能长 60px，
+   * 现象：每帧调 `win.setPosition()`，外框宽度每帧长 1px，60 帧能长 60px，
    *      停止拖拽后才被压回去 —— 正是用户反馈的"长按拖拽不停晃动就会变大"。
    *
    * 根因（探针实测确认，Windows 11 + Electron 33.4.11）：
-   *  在 Windows 上，无边框窗口每次调用 `setPosition()` 都会让窗口的实际
-   *  尺寸长 1px，且逐帧累积。原因是无边框窗口带 1px 不可见边框，
-   *  而 setPosition 内部按内容矩形重算窗口矩形时把这 1px 算进去了。
+   *  在 Windows 上，无边框窗口每次调用 `setPosition()` 都会让**外框**长 1px，
+   *  而**内容尺寸不变**（探针 D：30 次 setPosition 后外框 +1、内容 +0）。
    *  这与"有没有加 min/max 锁"无关 —— 裸调 setPosition 同样会漂。
    *
    * 修法：
-   *  1. 拖拽全程**不再调用 setPosition**，改用 setBounds（内容语义）；
-   *  2. 尺寸用**内容尺寸**做不变量（getContentSize），与 setBounds 参数同源；
+   *  1. 拖拽全程**不再调用 setPosition**，改用 setContentBounds（内容语义）；
+   *  2. 尺寸用**内容尺寸**做不变量（getContentSize），与 setContentBounds 同源；
    *  3. 位置自己维护（dragPosX/dragPosY），只累加不回读。
+   *
+   * ★ 为什么位置要"累加理想值"而不是"读回实际值" ★
+   *  显示器是 150% DPI，Chromium 的 DIP↔物理像素换算用整数截断，
+   *  窗口位置只能落在偶数 DIP（探针实测：请求 303 实际落在 302）。
+   *  若每帧读回实际落点再叠加新位移，这 1px 的量化误差会被**逐帧累积**；
+   *  保留理想值累加、让系统每次重新量化，总误差才能稳定在 1px 以内。
    */
   moveByWhileDragging(win: BrowserWindow, dx: number, dy: number): void {
     if (win.isDestroyed()) return;
@@ -229,11 +259,11 @@ export class WindowState {
     }
 
     this.internalResize = true;
-    win.setBounds(
+    win.setContentBounds(
       {
         x: Math.round(this.dragPosX),
         y: Math.round(this.dragPosY),
-        // setBounds 的 w/h 是内容语义，与 frozenSize 同源
+        // 内容语义，与 frozenSize 同源
         width: this.frozenSize[0],
         height: this.frozenSize[1],
       },
@@ -244,37 +274,47 @@ export class WindowState {
 
   /**
    * 结束拖拽：
-   *  - 累计位移 < 阈值 → 长按微动，恢复默认位置模式 + 贴回右下
-   *  - 否则标记为已离开默认位置
+   *  - 累计位移 < 阈值 **且 拖拽开始时窗口就在默认位置** → 长按微动，贴回右下
+   *  - 否则保留用户自己拖到的位置
    *  - 解除 setMin/setMax 锁定
-   *  - ★ 用 setBounds 强制把 size 设回 frozenSize（同时锁 position）——
-   *    setBounds 比 setSize 在 Windows 上更"硬"，因为它一次性设 HWND 的全部属性。
+   *  - ★ 用 setContentBounds 强制把 size 设回 frozenSize（同时锁 position）
+   *
+   * ★★ 弹回条件为什么必须带 wasAtDefaultAtDragStart ★★
+   * 用户若先把宠物拖到别处（atDefaultPosition=false），之后再做一次
+   * "长按 + 轻晃几像素"，累计位移必然 < 12px。旧逻辑此时会把窗口
+   * 强行瞬移回右下角 —— 探针实测是 706px 的跳变，
+   * 这正是用户说的"长按拖拽晃动能明显感觉到偏移"。
+   * 用户自己挪走过的窗口，任何时候都不该被系统拽回去。
    */
   endDrag(win: BrowserWindow): void {
     if (!this.isDragging) return;
     this.isDragging = false;
     const movedDistance = Math.hypot(this.dragAccumDx, this.dragAccumDy);
-    if (movedDistance < DRAG_LEAVE_THRESHOLD_PX) {
+    const shouldSnapBack =
+      movedDistance < DRAG_LEAVE_THRESHOLD_PX && this.wasAtDefaultAtDragStart;
+    if (shouldSnapBack) {
       this.atDefaultPosition = true;
       if (!win.isDestroyed()) this.alignToDefault(win);
-    } else {
+    } else if (movedDistance >= DRAG_LEAVE_THRESHOLD_PX) {
+      // 用户明确拖动了 → 记住"已经离开默认位置"
       this.atDefaultPosition = false;
     }
+    // movedDistance < 阈值 且 拖拽开始时就不在默认位置：
+    //   保持 atDefaultPosition=false，窗口留在用户放的位置，不做任何瞬移。
     if (!win.isDestroyed()) {
       // 解锁 setMin/setMax
       win.setMinimumSize(this.minSize, this.minSize);
       win.setMaximumSize(0, 0);
-      // 用 setBounds 压回 frozenSize（同时锁 position，比 setSize 更"硬"）
+      // 尺寸若被系统改动，压回 frozenSize（同时锁 position）
       if (this.frozenSize) {
         const cur = win.getContentSize();
         if (cur[0] !== this.frozenSize[0] || cur[1] !== this.frozenSize[1]) {
-          // console.log('[main][END-FREEZE] setBounds →', this.frozenSize[0], 'x', this.frozenSize[1]);
+          // console.log('[main][END-FREEZE] setContentBounds →', this.frozenSize[0], 'x', this.frozenSize[1]);
           this.internalResize = true;
-          win.setBounds(
+          win.setContentBounds(
             {
               x: this.dragPosX,
               y: this.dragPosY,
-              // setBounds 的 w/h 是内容语义，与 frozenSize 同源
               width: this.frozenSize[0],
               height: this.frozenSize[1],
             },
@@ -302,22 +342,26 @@ export class WindowState {
    * resize 后的位置调整：
    *  - atDefaultPosition=true：贴回当前 display 的 workArea 右下角
    *  - atDefaultPosition=false：仅做边界 clamp
+   *
+   * 统一用内容语义（getContentBounds / setContentBounds），与拖拽链路同源。
    */
   private snapAfterResize(win: BrowserWindow): void {
     if (win.isDestroyed()) return;
     const wa = this.getWorkArea(win);
-    // 内容尺寸（与 frozenSize / setBounds 同源）
+    // 内容尺寸（与 frozenSize / setContentBounds 同源）
     const [w, h] = win.getContentSize();
-    let nx = this.atDefaultPosition ? wa.x + wa.width - w : win.getPosition()[0];
-    let ny = this.atDefaultPosition ? wa.y + wa.height - h : win.getPosition()[1];
+    const cb = win.getContentBounds();
+    let nx = this.atDefaultPosition ? wa.x + wa.width - w : cb.x;
+    let ny = this.atDefaultPosition ? wa.y + wa.height - h : cb.y;
     if (nx < wa.x) nx = wa.x;
     if (ny < wa.y) ny = wa.y;
     if (nx + w > wa.x + wa.width) nx = wa.x + wa.width - w;
     if (ny + h > wa.y + wa.height) ny = wa.y + wa.height - h;
-    if (nx !== win.getPosition()[0] || ny !== win.getPosition()[1]) {
-      // 用 setBounds 而不是 setPosition —— setPosition 在 Windows 上会让窗口长 1px
+    if (nx !== cb.x || ny !== cb.y) {
+      // 用 setContentBounds 而不是 setPosition ——
+      // setPosition 在 Windows 上会让外框长 1px
       this.internalResize = true;
-      win.setBounds(
+      win.setContentBounds(
         {
           x: Math.round(nx),
           y: Math.round(ny),

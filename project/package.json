@@ -17,6 +17,9 @@
     "dist": "npm run build && electron-builder",
     "dev:electron": "node -e \"require('child_process').spawnSync('cmd',['/c','set ELECTRON_RUN_AS_NODE=&& electron-vite dev'],{stdio:'inherit',shell:true})\"",
     "dev:personal": "vite --config vite.personal.config.mjs",
+    "probe:build": "esbuild src/main/window-state.ts --bundle --platform=node --format=cjs --external:electron --outfile=probes/.build/window-state.cjs",
+    "probe:drag": "npm run probe:build && node probes/run.mjs probes/probe5-regression.js",
+    "probe:drag:all": "npm run probe:build && node probes/run.mjs probes/probe1-drag-baseline.js probes/probe2-move-strategies.js probes/probe3-dpi-quantization.js probes/probe5-regression.js",
     "build:personal": "vite build --config vite.personal.config.mjs",
     "build:renderer": "electron-vite build"
   },

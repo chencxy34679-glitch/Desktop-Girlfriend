@@ -1,0 +1,250 @@
+{
+  "S1_现状_setBounds_锁内容尺寸": {
+    "方案": "setBounds(contentW/H) + setMin/setMax(内容尺寸) —— 当前生产代码",
+    "初始": {
+      "contentBounds": {
+        "x": 300,
+        "y": 200,
+        "width": 294,
+        "height": 570
+      },
+      "contentSize": [
+        294,
+        570
+      ],
+      "size": [
+        294,
+        570
+      ]
+    },
+    "beginDrag后": {
+      "contentBounds": {
+        "x": 300,
+        "y": 200,
+        "width": 294,
+        "height": 570
+      },
+      "contentSize": [
+        294,
+        570
+      ],
+      "size": [
+        294,
+        570
+      ]
+    },
+    "最终": {
+      "contentBounds": {
+        "x": 300,
+        "y": 200,
+        "width": 294,
+        "height": 570
+      },
+      "contentSize": [
+        294,
+        570
+      ],
+      "size": [
+        294,
+        570
+      ]
+    },
+    "内容原点最大误差px": 1,
+    "最终内容原点误差px": 0,
+    "内容尺寸出现过的取值": [
+      "294x570"
+    ],
+    "外框尺寸出现过的取值": [
+      "295x571",
+      "294x570"
+    ],
+    "内容尺寸是否恒定": true,
+    "外框尺寸是否恒定": false
+  },
+  "S2_setContentBounds_锁外框尺寸": {
+    "方案": "setContentBounds(contentW/H) + setMin/setMax(外框尺寸)",
+    "初始": {
+      "contentBounds": {
+        "x": 300,
+        "y": 200,
+        "width": 294,
+        "height": 570
+      },
+      "contentSize": [
+        294,
+        570
+      ],
+      "size": [
+        294,
+        570
+      ]
+    },
+    "beginDrag后": {
+      "contentBounds": {
+        "x": 300,
+        "y": 200,
+        "width": 294,
+        "height": 570
+      },
+      "contentSize": [
+        294,
+        570
+      ],
+      "size": [
+        294,
+        570
+      ]
+    },
+    "最终": {
+      "contentBounds": {
+        "x": 300,
+        "y": 200,
+        "width": 294,
+        "height": 570
+      },
+      "contentSize": [
+        294,
+        570
+      ],
+      "size": [
+        294,
+        570
+      ]
+    },
+    "内容原点最大误差px": 1,
+    "最终内容原点误差px": 0,
+    "内容尺寸出现过的取值": [
+      "294x570"
+    ],
+    "外框尺寸出现过的取值": [
+      "295x571",
+      "294x570"
+    ],
+    "内容尺寸是否恒定": true,
+    "外框尺寸是否恒定": false
+  },
+  "S3_setContentBounds_不锁": {
+    "方案": "setContentBounds(contentW/H) + 不设 setMin/setMax",
+    "初始": {
+      "contentBounds": {
+        "x": 300,
+        "y": 200,
+        "width": 294,
+        "height": 570
+      },
+      "contentSize": [
+        294,
+        570
+      ],
+      "size": [
+        294,
+        570
+      ]
+    },
+    "beginDrag后": {
+      "contentBounds": {
+        "x": 300,
+        "y": 200,
+        "width": 294,
+        "height": 570
+      },
+      "contentSize": [
+        294,
+        570
+      ],
+      "size": [
+        294,
+        570
+      ]
+    },
+    "最终": {
+      "contentBounds": {
+        "x": 300,
+        "y": 200,
+        "width": 294,
+        "height": 570
+      },
+      "contentSize": [
+        294,
+        570
+      ],
+      "size": [
+        294,
+        570
+      ]
+    },
+    "内容原点最大误差px": 1,
+    "最终内容原点误差px": 0,
+    "内容尺寸出现过的取值": [
+      "294x570"
+    ],
+    "外框尺寸出现过的取值": [
+      "295x571",
+      "294x570"
+    ],
+    "内容尺寸是否恒定": true,
+    "外框尺寸是否恒定": false
+  },
+  "S4_setBounds_锁外框尺寸": {
+    "方案": "setBounds(contentW/H) + setMin/setMax(外框尺寸) —— 只改锁，不改移动方式",
+    "初始": {
+      "contentBounds": {
+        "x": 300,
+        "y": 200,
+        "width": 294,
+        "height": 570
+      },
+      "contentSize": [
+        294,
+        570
+      ],
+      "size": [
+        294,
+        570
+      ]
+    },
+    "beginDrag后": {
+      "contentBounds": {
+        "x": 300,
+        "y": 200,
+        "width": 294,
+        "height": 570
+      },
+      "contentSize": [
+        294,
+        570
+      ],
+      "size": [
+        294,
+        570
+      ]
+    },
+    "最终": {
+      "contentBounds": {
+        "x": 300,
+        "y": 200,
+        "width": 294,
+        "height": 570
+      },
+      "contentSize": [
+        294,
+        570
+      ],
+      "size": [
+        294,
+        570
+      ]
+    },
+    "内容原点最大误差px": 1,
+    "最终内容原点误差px": 0,
+    "内容尺寸出现过的取值": [
+      "294x570"
+    ],
+    "外框尺寸出现过的取值": [
+      "295x571",
+      "294x570"
+    ],
+    "内容尺寸是否恒定": true,
+    "外框尺寸是否恒定": false
+  }
+}
