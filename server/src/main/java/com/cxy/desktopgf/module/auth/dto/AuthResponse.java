@@ -1,5 +1,7 @@
 package com.cxy.desktopgf.module.auth.dto;
 
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import com.fasterxml.jackson.databind.ser.std.ToStringSerializer;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -20,7 +22,14 @@ public class AuthResponse implements Serializable {
 
     private static final long serialVersionUID = 1L;
 
-    /** 用户 ID */
+    /**
+     * 用户 ID（雪花 ID，19 位）。
+     *
+     * <p>序列化为字符串而非数字：JavaScript 的 Number 只有 53 位有效精度，
+     * 直接下发 JSON number 会被前端舍入（2113981380731560000 ← 实际是 ...5618）。
+     * 用字符串下发可保证桌面端拿到的 ID 精确无损。
+     */
+    @JsonSerialize(using = ToStringSerializer.class)
     private Long userId;
 
     /** 用户名，匿名用户为 null */
