@@ -157,8 +157,15 @@ export class SpineCharacter implements ICharacter {
     const state = new AnimationState(stateData);
     state.setAnimation(0, idleAnim, true);
     state.apply(skeleton);
+    // ★ 必须手动更新世界变换 ★
+    // `state.apply(skeleton)` 只把动画的关键帧写进骨骼的**局部**属性
+    // （x / y / rotation / scale），**不会**计算世界坐标（worldX / worldY / a / d）。
+    // 不调 updateWorldTransform 的话，所有骨骼的世界变换都是 0，
+    // 于是所有 attachment 的世界顶点全是 (0,0) → 包围盒算出来是空的。
+    skeleton.updateWorldTransform();
 
-    // 6) 求包围盒（必须在 state.apply 之后，骨骼姿态才是 idle 动画帧）
+    // 6) 求包围盒（必须在 state.apply + updateWorldTransform 之后，
+    //    此时骨骼姿态才是 idle 动画帧的世界坐标）
     const bounds = computeBounds(skeleton, state);
 
     // 7) 按包围盒设置画布尺寸（含 DPR）
@@ -193,6 +200,10 @@ export class SpineCharacter implements ICharacter {
     const dt = dtMs / 1000;
     this.state.update(dt);
     this.state.apply(this.skeleton);
+    // ★ 每帧都要更新世界变换 ★
+    // state.apply() 只写骨骼的局部属性；世界坐标（含约束 IK / transform 的
+    // 求值结果）要靠 updateWorldTransform() 算出来，否则角色不会动。
+    this.skeleton.updateWorldTransform();
     this.draw();
   }
 
