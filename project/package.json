@@ -21,12 +21,12 @@
     "build:renderer": "electron-vite build"
   },
   "dependencies": {
-    "@esotericsoftware/spine-pixi-v8": "^4.2.119",
+    "@esotericsoftware/spine-canvas": "^4.0.31",
+    "@esotericsoftware/spine-core": "^4.0.31",
     "@pxlkit/ui-kit-vue": "^2.2.0",
     "electron-store": "^10.0.0",
     "pinia": "^2.2.0",
     "pinia-plugin-persistedstate": "^4.0.0",
-    "pixi.js": "^8.19.0",
     "vue": "^3.5.0",
     "vue-router": "^4.4.0"
   },

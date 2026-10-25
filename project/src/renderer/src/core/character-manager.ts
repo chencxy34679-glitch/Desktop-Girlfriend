@@ -2,17 +2,19 @@
  * CharacterManager —— 拥有当前角色实例，响应切换 / 释放 / 缩放；
  *
  * 监听主进程推流的"激活角色变更"事件，用户从菜单切角色：
- *  - 用 fadeTo(0) 把 root alpha 渐黑 → 销毁旧 ICharacter
- *  - 用 factory 创建新实例（保持 alpha=0）
- *  - root.addChild(newContainer) → fadeTo(1) 渐显
+ *  - 用 fadeTo(0) 把 root opacity 渐黑 → 销毁旧 ICharacter
+ *  - 用 factory 创建新实例（保持 opacity=0）
+ *  - root.appendChild(newContainer) → fadeTo(1) 渐显
  *  - 重新计算窗口尺寸（applyScale）
  *
  * 事件：
  *  - 'character:loaded'    —— 新角色已挂上
  *  - 'character:disposed'  —— 旧角色已销毁
+ *
+ * 注：渲染层已从 PixiJS 8 改为原生 canvas（spine-canvas 4.0.x），
+ *     所以 root 是 DOM 元素，缩放走 CSS transform，渐隐走 opacity。
  */
 
-import { Application, Container } from 'pixi.js';
 import type { EventBus } from './event-bus';
 import type { ICharacter } from './i-character';
 import type { CharacterConfig } from '../../../shared/character-config';
@@ -39,8 +41,8 @@ const FADE_IN_MS = 200;
 
 export interface CharacterManagerOptions {
   bus: EventBus;
-  /** PIXI 根容器，角色会挂到这里 */
-  root: Container;
+  /** 角色挂载的根容器（DOM 元素） */
+  root: HTMLElement;
   /** Electron / Vue 自定义适配：提供 loadCharacter / resizeWindow */
   adapter: Adapter;
   /** scale 变化时通知外部（菜单缩放 CSS 等） */
@@ -56,11 +58,6 @@ export interface CharacterManagerOptions {
    * 主进程侧 WindowState 也会在 isDragging 期间挂起所有 tryResize，是双保险。
    */
   isDragging?: () => boolean;
-  /**
-   * 可选：传入 pixi Application 用于 tween ticker。
-   * 不传时 fadeTo 退化为"立即设 alpha"（无动画），便于单元测试 / 非 pixi host。
-   */
-  app?: Application;
   /** 可选：过渡时长（毫秒）。fadeOut / fadeIn 各自独立 */
   transition?: { fadeOutMs?: number; fadeInMs?: number };
 }
@@ -97,7 +94,8 @@ export class CharacterManager {
     if (this.opts.isDragging?.()) return;
     const s = Math.min(SCALE_MAX, Math.max(SCALE_MIN, next));
     this.currentScale = s;
-    this.opts.root.scale.set(s);
+    this.opts.root.style.transform = `scale(${s})`;
+    this.opts.root.style.transformOrigin = 'top left';
     this.opts.onScaleChanged?.(s);
     this.opts.bus.emit('stage:scale', { scale: s });
     const w = Math.max(64, Math.round(this.current.imageSize.width * s));
@@ -117,13 +115,13 @@ export class CharacterManager {
   async load(config: CharacterConfig): Promise<void> {
     if (this.current) {
       this.opts.bus.emit('character:disposed', { id: this.current.info.id });
-      this.current.container.parent?.removeChild(this.current.container);
+      this.current.container.parentElement?.removeChild(this.current.container);
       this.current.dispose();
       this.current = null;
     }
     const urls = resolveCharacterUrls(config, this.opts.toAbsolute);
     const character = await createCharacter({ config, urls: urls as ResourceUrls });
-    this.opts.root.addChild(character.container);
+    this.opts.root.appendChild(character.container);
     this.current = character;
     this.currentConfig = config;
     this.opts.bus.emit('character:loaded', {
@@ -175,23 +173,21 @@ export class CharacterManager {
   }
 
   /**
-   * 立即设置 root alpha（不动画）。用于"load 之后立刻把 root 拉到 0 再 fadeIn"。
+   * 立即设置 root opacity（不动画）。用于"load 之后立刻把 root 拉到 0 再 fadeIn"。
    */
   private setRootAlpha(alpha: number): void {
     this.rootAlpha = alpha;
-    this.opts.root.alpha = alpha;
+    this.opts.root.style.opacity = String(alpha);
   }
 
   /**
-   * 把 root.alpha 从当前值缓动到 target；完成时 resolve。
-   * 用 elapsed/durationMs 推进 + ease-out 缓动；时长可控，与帧率解耦。
-   * 无新依赖（pixi.js 自带 ticker）。
+   * 把 root.opacity 从当前值缓动到 target；完成时 resolve。
+   * 用 rAF + elapsed/durationMs 推进 + ease-out 缓动；时长可控，与帧率解耦。
    */
   private fadeTo(target: number, durationMs: number): Promise<void> {
     return new Promise<void>((resolve) => {
-      const app = this.opts.app;
-      // 无 ticker 或 durationMs<=0：立即设值并 resolve（保留同步语义）
-      if (!app || durationMs <= 0) {
+      // durationMs<=0：立即设值并 resolve（保留同步语义）
+      if (durationMs <= 0) {
         this.setRootAlpha(target);
         resolve();
         return;
@@ -200,7 +196,7 @@ export class CharacterManager {
       const startAlpha = this.rootAlpha;
       const startTime = performance.now();
 
-      const tickerFn = (): void => {
+      const step = (): void => {
         const elapsed = performance.now() - startTime;
         const t = Math.min(1, elapsed / durationMs);
         // ease-out quad：起始快、末段慢
@@ -209,11 +205,12 @@ export class CharacterManager {
         this.setRootAlpha(alpha);
         if (t >= 1) {
           this.setRootAlpha(target);
-          app.ticker.remove(tickerFn);
           resolve();
+          return;
         }
+        requestAnimationFrame(step);
       };
-      app.ticker.add(tickerFn);
+      requestAnimationFrame(step);
     });
   }
 }

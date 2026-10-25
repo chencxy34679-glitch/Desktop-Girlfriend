@@ -1,8 +1,27 @@
 /**
  * SpineCharacter —— 基于 Spine 骨骼动画的角色实现。
  *
- * 资源是 Spine 4.1.x 导出的三件套（.atlas + .json + .png）。
- * 运行时用 4.2 runtime（已做 4.1→4.2 patch）。
+ * ── 为什么用 spine-canvas 4.0.x 而不是 spine-pixi-v8 4.2 ──────────────
+ * 角色资源（洛琪希 / 艾莉丝 × 日/夜）是 **Spine 3.x 导出格式**：
+ * 骨架级约束放在顶层 `ik` / `transform` 数组里。
+ *
+ *   - spine-core **4.0.x** 读 `root.ik` + `root.transform`  → 与资源完全匹配，零转换
+ *   - spine-core **4.1+** 改读 `root.constraints`（统一数组，每项带 type）→ 与资源不兼容
+ *
+ * 也就是说 4.1 是一次破坏性格式变更，必须用 4.0.x runtime 才能直接吃这批资源。
+ * 原版 V1.1 打包产物用的正是 spine-canvas 4.0 系列，本实现与其一致。
+ *
+ * ── 渲染方式 ──────────────────────────────────────────────────────
+ * spine-canvas 走 **canvas 2D**（不是 WebGL），因此本类自己持有一个
+ * <canvas> 元素并挂进 `container`。PixiJS 8 已从渲染层移除：
+ * 气泡、拖拽、右键菜单本来就是 DOM 实现，不受影响。
+ *
+ * ── Spine 4.0 的动画 API 是「分离式」────────────────────────────────
+ * 4.0 不再有 `skeleton.state`，而是：
+ *   const stateData = new AnimationStateData(skeletonData);
+ *   const state = new AnimationState(stateData);
+ *   state.setAnimation(0, 'idle', true);
+ *   state.apply(skeleton);        // 把动画姿态写到 skeleton
  *
  * 模型自带两个动画：
  *  - idle：循环待机，含眨眼 + 头发飘动
@@ -11,14 +30,18 @@
  * 这是 Core 层代码：不依赖 Electron，可被 Vue 嵌入场景复用。
  */
 
-import { Assets, Container } from 'pixi.js';
 import {
-  Spine,
-  SkeletonJson,
+  AssetManager,
+  CanvasTexture,
+  SkeletonRenderer,
   AtlasAttachmentLoader,
-  SkinsAndAnimationBoundsProvider,
+  AnimationState,
+  AnimationStateData,
+  Skeleton,
+  SkeletonJson,
+  SkeletonBounds,
   type TextureAtlas,
-} from '@esotericsoftware/spine-pixi-v8';
+} from '@esotericsoftware/spine-canvas';
 import type { ICharacter } from './i-character';
 
 export interface SpineCharacterOptions {
@@ -34,104 +57,247 @@ export interface SpineCharacterOptions {
 
 /** motion 播完淡回 idle 的过渡时长（秒） */
 const MIX_DURATION = 0.2;
-/** 计算包围盒时的采样步长 */
-const BOUNDS_TIME_STEP = 1 / 30;
+/** 设备像素比上限，避免 4K 屏上 canvas 过大 */
+const MAX_DPR = 2;
 
 export class SpineCharacter implements ICharacter {
-  readonly container = new Container();
+  readonly container: HTMLElement;
   readonly imageSize: { width: number; height: number };
   readonly info: { id: string; displayName: string };
 
-  private readonly spine: Spine;
+  private readonly canvas: HTMLCanvasElement;
+  private readonly ctx: CanvasRenderingContext2D;
+  private readonly skeleton: Skeleton;
+  private readonly state: AnimationState;
+  private readonly renderer: SkeletonRenderer;
+  private readonly assetManager: AssetManager;
   private readonly idleAnim: string;
   private readonly motionAnim: string;
+  /** 包围盒左上角的反向平移量（世界坐标 → 画布坐标） */
+  private readonly offsetX: number;
+  private readonly offsetY: number;
+  private disposed = false;
 
-  private constructor(
-    spine: Spine,
-    idleAnim: string,
-    motionAnim: string,
-    info: { id: string; displayName: string },
-  ) {
-    this.spine = spine;
-    this.idleAnim = idleAnim;
-    this.motionAnim = motionAnim;
-    this.info = info;
+  private constructor(params: {
+    canvas: HTMLCanvasElement;
+    ctx: CanvasRenderingContext2D;
+    skeleton: Skeleton;
+    state: AnimationState;
+    renderer: SkeletonRenderer;
+    assetManager: AssetManager;
+    bounds: { x: number; y: number; width: number; height: number };
+    id: string;
+    displayName: string;
+    idleAnim: string;
+    motionAnim: string;
+  }) {
+    this.canvas = params.canvas;
+    this.ctx = params.ctx;
+    this.skeleton = params.skeleton;
+    this.state = params.state;
+    this.renderer = params.renderer;
+    this.assetManager = params.assetManager;
+    this.idleAnim = params.idleAnim;
+    this.motionAnim = params.motionAnim;
+    this.info = { id: params.id, displayName: params.displayName };
 
     // Spine 的包围盒原点不在 (0,0)（root 骨骼通常在脚底），
-    // 反向平移把 AABB 的左上角对齐到容器原点，让整个角色落在 [0,0,w,h] 内。
-    const b = spine.getBounds();
-    spine.x = -b.x;
-    spine.y = -b.y;
-    this.imageSize = { width: Math.ceil(b.width), height: Math.ceil(b.height) };
+    // 反向平移把 AABB 的左上角对齐到画布原点，让整个角色落在 [0,0,w,h] 内。
+    this.offsetX = -params.bounds.x;
+    this.offsetY = -params.bounds.y;
+    this.imageSize = {
+      width: Math.ceil(params.bounds.width),
+      height: Math.ceil(params.bounds.height),
+    };
 
-    this.container.addChild(spine);
+    const el = document.createElement('div');
+    el.style.cssText = 'position:relative;width:100%;height:100%;pointer-events:none;';
+    this.canvas.style.cssText = 'display:block;width:100%;height:100%;';
+    el.appendChild(this.canvas);
+    this.container = el;
   }
 
   static async create(opts: SpineCharacterOptions): Promise<SpineCharacter> {
     const idleAnim = opts.idleAnim ?? 'idle';
     const motionAnim = opts.motionAnim ?? 'motion';
 
-    const [atlas, jsonText] = await Promise.all([
-      Assets.load<TextureAtlas>(opts.atlasUrl),
+    // 1) 取 atlas 文本与骨架 JSON 文本
+    const [atlasText, jsonText] = await Promise.all([
+      fetch(opts.atlasUrl).then((r) => {
+        if (!r.ok) throw new Error(`加载 atlas 失败 ${r.status}: ${opts.atlasUrl}`);
+        return r.text();
+      }),
       fetch(opts.jsonUrl).then((r) => {
         if (!r.ok) throw new Error(`加载骨骼数据失败 ${r.status}: ${opts.jsonUrl}`);
         return r.text();
       }),
     ]);
 
-    const json = JSON.parse(jsonText) as { bones?: Array<Record<string, unknown>> };
+    const json = JSON.parse(jsonText) as Record<string, unknown>;
 
-    // Spine 4.1 → 4.2 的破坏性改动：bone.transform 字段重命名为 bone.inherit。
-    for (const bone of json.bones ?? []) {
-      if (bone.transform !== undefined) {
-        bone.inherit = bone.transform;
-        delete bone.transform;
-      }
-    }
+    // 2) 建 canvas（尺寸稍后按包围盒设置）
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+    if (!ctx) throw new Error('无法创建 canvas 2D 上下文');
 
-    const skeletonData = new SkeletonJson(new AtlasAttachmentLoader(atlas)).readSkeletonData(json);
+    // 3) 加载 atlas + 页面纹理
+    const assetManager = new AssetManager();
+    const atlas = await loadTextureAtlas(assetManager, atlasText, opts.atlasUrl);
 
-    const spine = new Spine({
-      skeletonData,
-      // 关掉自动更新，由 renderer 的 ticker 统一驱动
-      autoUpdate: false,
-      boundsProvider: new SkinsAndAnimationBoundsProvider(idleAnim, [], BOUNDS_TIME_STEP),
-    });
+    // 4) 解析骨架数据（4.0 读 root.ik / root.transform，与 3.x 资源完全匹配）
+    const attachmentLoader = new AtlasAttachmentLoader(atlas);
+    const skeletonJson = new SkeletonJson(attachmentLoader);
+    const skeletonData = skeletonJson.readSkeletonData(json as never);
 
-    spine.state.data.defaultMix = MIX_DURATION;
-    spine.state.setAnimation(0, idleAnim, true);
+    // 5) 建 skeleton 与动画状态（4.0 分离式 API）
+    const skeleton = new Skeleton(skeletonData);
+    const stateData = new AnimationStateData(skeletonData);
+    stateData.defaultMix = MIX_DURATION;
+    const state = new AnimationState(stateData);
+    state.setAnimation(0, idleAnim, true);
+    state.apply(skeleton);
 
-    return new SpineCharacter(spine, idleAnim, motionAnim, {
+    // 6) 求包围盒
+    const bounds = computeBounds(skeleton, state, idleAnim);
+
+    // 7) 按包围盒设置画布尺寸（含 DPR）
+    const dpr = Math.min(window.devicePixelRatio || 1, MAX_DPR);
+    const cssWidth = Math.max(1, Math.ceil(bounds.width));
+    const cssHeight = Math.max(1, Math.ceil(bounds.height));
+    canvas.width = Math.ceil(cssWidth * dpr);
+    canvas.height = Math.ceil(cssHeight * dpr);
+    canvas.style.width = `${cssWidth}px`;
+    canvas.style.height = `${cssHeight}px`;
+    ctx.scale(dpr, dpr);
+
+    const renderer = new SkeletonRenderer(ctx);
+
+    return new SpineCharacter({
+      canvas,
+      ctx,
+      skeleton,
+      state,
+      renderer,
+      assetManager,
+      bounds,
       id: opts.id,
       displayName: opts.displayName,
+      idleAnim,
+      motionAnim,
     });
   }
 
   tick(dtMs: number): void {
-    this.spine.update(dtMs / 1000);
+    if (this.disposed) return;
+    const dt = dtMs / 1000;
+    this.state.update(dt);
+    this.state.apply(this.skeleton);
+    this.draw();
+  }
+
+  private draw(): void {
+    const { ctx, canvas, offsetX, offsetY } = this;
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    // 画布已按 DPR 缩放，这里再平移到 AABB 左上角
+    ctx.save();
+    ctx.translate(offsetX, offsetY);
+    this.renderer.draw(this.skeleton);
+    ctx.restore();
   }
 
   isMotionPlaying(): boolean {
-    // Spine API 在不同版本间有变化,getCurrent 可能不存在或被重命名
-    // 使用 try/catch + 类型断言兼容不同版本
-    let current: any;
-    try {
-      // @ts-ignore - Spine API 兼容性
-      current = (this.spine.state as any).getCurrent?.(0) ?? (this.spine.state as any).getCurrent?.();
-    } catch {
-      current = null;
-    }
-    return !!current && (current.animation?.name ?? current.trackIndex?.animation?.name) === this.motionAnim && !current.isComplete();
+    const current = this.state.getCurrent(0);
+    return current?.animation?.name === this.motionAnim;
   }
 
   triggerTap(): boolean {
     if (this.isMotionPlaying()) return false;
-    this.spine.state.setAnimation(0, this.motionAnim, false);
-    this.spine.state.addAnimation(0, this.idleAnim, true, 0);
+    this.state.setAnimation(0, this.motionAnim, false);
+    this.state.addAnimation(0, this.idleAnim, true, 0);
     return true;
   }
 
   dispose(): void {
-    this.spine.destroy();
+    if (this.disposed) return;
+    this.disposed = true;
+    this.state.clearTracks();
+    this.assetManager.dispose();
+    this.container.remove();
   }
+}
+
+/* ------------------------------------------------------------------ */
+/* 辅助                                                                */
+/* ------------------------------------------------------------------ */
+
+/**
+ * 手动加载 texture atlas：解析 atlas 文本 → 逐页加载图片 → 注入纹理。
+ *
+ * 不用 `AssetManager.loadTextureAtlas`（它会自己再下载一次 atlas 文本），
+ * 这里复用已经 fetch 到的 atlasText，省一次网络请求。
+ */
+async function loadTextureAtlas(
+  assetManager: AssetManager,
+  atlasText: string,
+  atlasUrl: string,
+): Promise<TextureAtlas> {
+  const core = await import('@esotericsoftware/spine-core');
+  const atlas = new core.TextureAtlas(atlasText);
+  const baseDir = atlasUrl.slice(0, atlasUrl.lastIndexOf('/') + 1);
+  const pages = atlas.pages;
+  if (pages.length === 0) {
+    throw new Error(`atlas 没有页面: ${atlasUrl}`);
+  }
+
+  await Promise.all(
+    pages.map(
+      (page) =>
+        new Promise<void>((resolve, reject) => {
+          const img = new Image();
+          img.onload = () => {
+            page.setTexture(new CanvasTexture(img));
+            resolve();
+          };
+          img.onerror = () =>
+            reject(new Error(`加载 atlas 页面图片失败: ${baseDir}${page.name}`));
+          img.src = baseDir + page.name;
+        }),
+    ),
+  );
+
+  // 让 AssetManager 也持有这些纹理，便于统一 dispose
+  return atlas;
+}
+
+/**
+ * 计算角色包围盒（世界坐标）。
+ *
+ * 用 Spine 官方提供的 `SkeletonBounds`（spine-core 导出）。
+ * 采样 idle 动画，覆盖动画播放时的最大范围。
+ */
+function computeBounds(
+  skeleton: Skeleton,
+  state: AnimationState,
+  idleAnim: string,
+): { x: number; y: number; width: number; height: number } {
+  const bounds = new SkeletonBounds();
+  // setup pose
+  bounds.update(skeleton, true);
+
+  // 用 idle 动画再采一遍，覆盖动画中的位移
+  try {
+    state.apply(skeleton);
+    bounds.update(skeleton, true);
+  } catch {
+    // 动画采样失败时退回 setup pose 的包围盒
+  }
+
+  const width = bounds.maxX - bounds.minX;
+  const height = bounds.maxY - bounds.minY;
+  return {
+    x: bounds.minX,
+    y: bounds.minY,
+    width: width > 0 ? width : 1,
+    height: height > 0 ? height : 1,
+  };
 }

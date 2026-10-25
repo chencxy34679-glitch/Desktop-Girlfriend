@@ -48,7 +48,7 @@ export interface DragController {
 }
 
 export function setupDrag(
-  canvas: HTMLCanvasElement,
+  canvas: HTMLElement,
   opts: SetupDragOptions = {},
 ): DragController {
   const { onMove = () => {}, onTap, onDragStateChanged = () => {} } = opts;

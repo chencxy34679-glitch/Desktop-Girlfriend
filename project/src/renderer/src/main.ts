@@ -12,9 +12,7 @@
  *  7. 主循环 ticker 推进动画
  */
 
-import { Application, Container } from 'pixi.js';
 // PixiJS v8 在严格 CSP 下需要显式导入 unsafe-eval 旁路模块
-import 'pixi.js/unsafe-eval';
 
 import { EventBus } from './core/event-bus';
 import { CharacterManager } from './core/character-manager';
@@ -59,23 +57,17 @@ async function boot(): Promise<void> {
   const toAbsolute = (p: string): string =>
     new URL(p.split('/').map(encodeURIComponent).join('/'), document.baseURI).toString();
 
-  // ---- 3) PixiJS ----
-  const app = new Application();
-  await app.init({
-    backgroundAlpha: 0,
-    antialias: true,
-    resolution: window.devicePixelRatio || 1,
-    autoDensity: true,
-    resizeTo: document.getElementById(STAGE_ID) as HTMLElement,
-    preference: 'webgl',
-  });
-  const canvas = app.canvas as HTMLCanvasElement;
-  canvas.style.display = 'block';
-  document.getElementById(STAGE_ID)?.appendChild(canvas);
-  console.log('[renderer] PIXI app init OK');
+  // ---- 3) 舞台容器（DOM）----
+  // 渲染层已从 PixiJS 8 改为原生 canvas（spine-canvas 4.0.x），
+  // 与原版 V1.1 架构一致：舞台就是一个普通 div，角色往里塞 <canvas>。
+  const stage = document.getElementById(STAGE_ID) as HTMLElement;
+  const root = document.createElement('div');
+  root.style.cssText = 'position:absolute;inset:0;transform-origin:top left;';
+  stage.appendChild(root);
+  console.log('[renderer] stage ready');
 
-  const root = new Container();
-  app.stage.addChild(root);
+  // 拖拽 / 右键菜单挂在 stage 上（角色 canvas 自身 pointer-events:none）
+  const canvas = stage;  // 拖拽 / 菜单挂在 stage 上
 
   // ---- 4) EventBus + 适配器 ----
   const bus = new EventBus();
@@ -112,7 +104,6 @@ async function boot(): Promise<void> {
   const manager = new CharacterManager({
     bus,
     root,
-    app,
     adapter: {
       loadCharacter: (id) => window.petApi.loadCharacter(id),
       resizeWindow: (size) => window.petApi.resizeWindow(size),
@@ -269,10 +260,16 @@ async function boot(): Promise<void> {
     else if (e.key === '0') applyScale(SCALE_DEFAULT);
   });
 
-  // ---- 8) ticker ----
-  app.ticker.add((ticker) => {
-    if (manager.character) manager.character.tick(ticker.deltaMS);
-  });
+  // ---- 8) ticker（rAF 驱动）----
+  let lastFrame = performance.now();
+  const tickLoop = (): void => {
+    const now = performance.now();
+    const dtMs = now - lastFrame;
+    lastFrame = now;
+    if (manager.character) manager.character.tick(dtMs);
+    requestAnimationFrame(tickLoop);
+  };
+  requestAnimationFrame(tickLoop);
 
   // ---- 9) 闲置随机互动 ----
   const scheduleRandomMotion = (): void => {

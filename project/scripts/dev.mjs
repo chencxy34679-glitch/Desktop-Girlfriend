@@ -59,10 +59,12 @@ console.log('[dev] 启动个人界面 dev server (5174) ...');
 const personal = run('personal', 'npx', ['vite', '--config', 'vite.personal.config.mjs']);
 
 // Electron 若在 ELECTRON_RUN_AS_NODE=1 环境下启动，会退化成纯 Node 进程，
-// electron.app 为 undefined，主进程直接崩。这里从 env 里彻底删掉该变量
-// （置空字符串在 Windows 上不一定生效，删除才可靠）。
-const electronEnv = { ...process.env };
-delete electronEnv.ELECTRON_RUN_AS_NODE;
+// electron.app 为 undefined，主进程直接崩（electron.app.isPackaged 报错）。
+//
+// 坑：run() 内部是 `{ ...process.env, ...env }`，如果只在 env 里 delete 这个键，
+// 展开 process.env 时它又会回来。必须显式设为 undefined ——
+// Node 的 spawn 会忽略值为 undefined 的环境变量，等价于"删除"。
+const electronEnv = { ...process.env, ELECTRON_RUN_AS_NODE: undefined };
 
 // 等个人界面 server 起来再拉 Electron，避免窗口白屏
 setTimeout(() => {

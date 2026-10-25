@@ -260,7 +260,7 @@ function menuItemCss(enabled: boolean | undefined): string {
   `;
 }
 
-export function setupContextMenu(canvas: HTMLCanvasElement): {
+export function setupContextMenu(canvas: HTMLElement): {
   dispose: () => void;
   /** 强制重新渲染菜单（用于外部状态变化后刷新勾选标记） */
   rerender: () => void;

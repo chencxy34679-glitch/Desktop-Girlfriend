@@ -1,23 +1,29 @@
 /**
  * 角色抽象接口 —— Core 层。
  *
- * 与 Electron 解耦：实现只依赖 PixiJS Container，因此可以嵌入 Vue / 任何 Web 容器。
+ * 与 Electron 解耦：实现只依赖 DOM，因此可以嵌入 Vue / 任何 Web 容器。
  *
  * 实现类：
- *  - spine-character.ts：当前主线（Spine 4.1/4.2 骨骼动画）
+ *  - spine-character.ts：当前主线（Spine 骨骼动画，基于 spine-canvas 4.0.x）
  *  - live2d-character.ts：Cubism 4/5 占位（接入 pixi-live2d-display 后启用）
  *
  * 后续如果再要扩展（VRM / MP4 / 静态立绘）继续在这里追加类型 + factory 分支。
  */
 
-import type { Container } from 'pixi.js';
-
 /** 触发 tap 后的返回值：true=确实触发了；false=互动动画在播，跳过 */
 export type TapResult = boolean;
 
 export interface ICharacter {
-  /** 由 renderer 挂到 stage 上；Spine 容器会包一层反向平移让 (0,0) 在 AABB 左上角 */
-  readonly container: Container;
+  /**
+   * 角色承载容器（DOM 元素）。
+   *
+   * 实现会在里面放一个 <canvas>，并在内部做反向平移，让角色的
+   * 包围盒左上角落在容器原点，这样整个角色落在 [0,0,w,h] 内。
+   *
+   * 注意：这是 DOM 元素而非 Pixi Container —— 渲染层已从 PixiJS 8
+   * 改为原生 canvas（spine-canvas），与 V1.1 架构一致。
+   */
+  readonly container: HTMLElement;
   /** 角色渲染像素尺寸（不含 padding），用于驱动窗口大小 */
   readonly imageSize: { width: number; height: number };
   /** 角色对外信息（id / displayName） */

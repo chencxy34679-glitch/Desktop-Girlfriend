@@ -114,3 +114,5 @@ docs/site/
 *~
 .cache/
 .tmp/
+# Spine 3.x→4.1 转换前的原始文件备份
+project/.spine-backup/

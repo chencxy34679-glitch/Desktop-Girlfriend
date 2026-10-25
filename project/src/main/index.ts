@@ -39,13 +39,33 @@ app.commandLine.appendSwitch(
   'CalculateNativeWinOcclusion,SnapLayout,WindowSnap',
 );
 
+const isDev = !app.isPackaged;
+
+// ── 开发期隔离 userData 目录 ───────────────────────────────────────────
+//
+// Electron 的单实例锁（requestSingleInstanceLock）绑定在 userData 路径上。
+// Windows 路径大小写不敏感，正式版（productName = DesktopGirlfriend）与
+// 开发版（package.json name = desktop-girlfriend）会落到**同一个**目录：
+//     %APPDATA%\DesktopGirlfriend  ==  %APPDATA%\desktop-girlfriend
+//
+// 于是「正在运行的正式版」会占住锁，开发版启动后立刻 quit()，而且因为
+// 原来的 quit 分支没有任何日志，表现就是**静默退出、什么都没有**。
+//
+// 开发期把 userData 改到独立的 -dev 目录，即可与正式版并存互不干扰，
+// 同时开发期的设置 / electron-store 数据也不会污染正式版。
+if (isDev) {
+  app.setPath('userData', path.join(app.getPath('appData'), 'DesktopGirlfriend-dev'));
+}
+
 // 单实例：避免同时开多个
 if (!app.requestSingleInstanceLock()) {
+  // 必须打日志：否则这个分支是「静默退出」，排查时完全看不到线索
+  console.warn(
+    `[main] 单实例锁获取失败：已有实例在运行（userData=${app.getPath('userData')}），本进程退出`,
+  );
   app.quit();
   process.exit(0);
 }
-
-const isDev = !app.isPackaged;
 let mainWindow: BrowserWindow | null = null;
 let taskbarTracker: TaskbarTracker | null = null;
 let fullscreenTracker: FullscreenTracker | null = null;

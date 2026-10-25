@@ -21,8 +21,6 @@
  * 推荐把容器定位为 fixed/absolute，pointer-events 全部接管。
  */
 
-import { Application, Container } from 'pixi.js';
-import 'pixi.js/unsafe-eval';
 import { EventBus } from '../core/event-bus';
 import { setupDrag } from '../drag';
 import { CharacterManager } from '../core/character-manager';
@@ -86,25 +84,11 @@ export async function mountPet(container: HTMLElement, opts: MountOptions): Prom
   }
   const toAbsolute = makeToAbsolute();
 
-  // 创建 PIXI 应用
-  const app = new Application();
-  await app.init({
-    backgroundAlpha: 0,
-    antialias: true,
-    resolution: window.devicePixelRatio || 1,
-    autoDensity: true,
-    resizeTo: stage,
-    preference: 'webgl',
-  });
-  const canvas = app.canvas as HTMLCanvasElement;
-  canvas.style.display = 'block';
-  canvas.style.width = '100%';
-  canvas.style.height = '100%';
-  canvas.style.touchAction = 'none';
-  stage.appendChild(canvas);
-
-  const root = new Container();
-  app.stage.addChild(root);
+  // 渲染层用原生 canvas（spine-canvas 4.0.x），舞台是一个普通 div
+  const root = document.createElement('div');
+  root.style.cssText = 'position:absolute;inset:0;transform-origin:top left;';
+  stage.appendChild(root);
+  const canvas = stage;
 
   // 应用容器样式：跟桌面宠物拖拽体验一致
   if (!stage.style.cursor) stage.style.cursor = 'grab';
@@ -146,11 +130,17 @@ export async function mountPet(container: HTMLElement, opts: MountOptions): Prom
     }
   }
 
-  // 主循环
-  app.ticker.add((ticker) => {
+  // 主循环（rAF 驱动）
+  let lastFrame = performance.now();
+  const tickLoop = (): void => {
+    const now = performance.now();
+    const dtMs = now - lastFrame;
+    lastFrame = now;
     const ch = manager.character;
-    if (ch) ch.tick(ticker.deltaMS);
-  });
+    if (ch) ch.tick(dtMs);
+    requestAnimationFrame(tickLoop);
+  };
+  requestAnimationFrame(tickLoop);
 
   const runtime: PetRuntime = {
     bus,
@@ -168,8 +158,8 @@ export async function mountPet(container: HTMLElement, opts: MountOptions): Prom
       disposeChange?.();
       drag.dispose();
       manager.dispose();
-      app.destroy(true, { children: true });
       bus.clear();
+      root.remove();
       canvas.remove();
     },
   };
